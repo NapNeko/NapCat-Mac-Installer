@@ -8,12 +8,13 @@
 import SwiftUI
 
 struct ContentView: View {
+    @AppStorage("GitHubProxy") private var proxy: GitHubProxy?
+
     @State private var qqVersion = QQVersion.loading
     @State private var patchStatus = PatchStatus.loading
     @State private var napcatVersion = NapcatVersion.loading
 
     @State private var buttonClicked = false
-    @State private var proxy: GitHubProxy?
 
     private var showPatch: Bool {
         return napcatVersion.installed || patchStatus.patched
