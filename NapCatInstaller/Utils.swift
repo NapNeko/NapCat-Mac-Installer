@@ -207,10 +207,10 @@ func getPatchedPackage() throws {
 }
 
 let napcatInstructions = #"""
-# 命令行启动，注入 NapCat 
+# \#(NSLocalizedString("命令行启动，注入 NapCat", comment: ""))
 $ /Applications/QQ.app/Contents/MacOS/QQ --no-sandbox
-# 参数可以加 -q <QQ号> 快速登录
+# \#(NSLocalizedString("参数可以加 -q <QQ号> 快速登录", comment: ""))
 
-# 正常启动 QQ GUI，不注入 NapCat 
+# \#(NSLocalizedString("正常启动 QQ GUI，不注入 NapCat", comment: ""))
 $ open -a QQ.app -n
 """#

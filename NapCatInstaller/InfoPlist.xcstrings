@@ -4,6 +4,12 @@
     "CFBundleName" : {
       "comment" : "Bundle name",
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "NapCat Installer"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -15,6 +21,12 @@
     "NSHumanReadableCopyright" : {
       "comment" : "Copyright (human-readable)",
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copyright © 2024 NapNeko"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
