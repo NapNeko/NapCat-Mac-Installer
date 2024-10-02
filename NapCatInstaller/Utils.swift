@@ -67,10 +67,11 @@ func getRemoteNapcat() async throws -> String? {
 }
 
 func removeNapcat() throws {
+    try? FileManager.default.removeItem(at: loaderURL)
     try FileManager.default.removeItem(at: napcatURL)
 }
 
-enum GitHubProxy: Hashable, CaseIterable {
+enum GitHubProxy: String, CaseIterable {
     case direct
     case moeyy
     case ghproxy
