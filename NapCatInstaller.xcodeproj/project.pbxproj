@@ -7,11 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		839782032CAD6E9300BF3455 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 839782022CAD6E9300BF3455 /* README.md */; };
 		83D4A8FE2CAD15D1007ECB3B /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 83D4A8FD2CAD15D1007ECB3B /* ZIPFoundation */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		837FAB552CAC480300FADBD1 /* NapCatInstaller.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NapCatInstaller.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		839782022CAD6E9300BF3455 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -50,6 +52,7 @@
 		837FAB4C2CAC480300FADBD1 = {
 			isa = PBXGroup;
 			children = (
+				839782022CAD6E9300BF3455 /* README.md */,
 				837FAB572CAC480300FADBD1 /* NapCatInstaller */,
 				837FAB562CAC480300FADBD1 /* Products */,
 			);
@@ -131,6 +134,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				839782032CAD6E9300BF3455 /* README.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
