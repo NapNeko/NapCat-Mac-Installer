@@ -1,0 +1,9 @@
+/*
+  InfoPlist.strings
+  NapCatInstaller
+
+  Created by hguandl on 2024/10/2.
+
+*/
+
+CFBundleName = "NapCat安装器";

@@ -14,9 +14,22 @@
 		837FAB552CAC480300FADBD1 /* NapCatInstaller.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NapCatInstaller.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		83D4A9C82CAD44FA007ECB3B /* Exceptions for "NapCatInstaller" folder in "NapCatInstaller" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 837FAB542CAC480300FADBD1 /* NapCatInstaller */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		837FAB572CAC480300FADBD1 /* NapCatInstaller */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				83D4A9C82CAD44FA007ECB3B /* Exceptions for "NapCatInstaller" folder in "NapCatInstaller" target */,
+			);
 			path = NapCatInstaller;
 			sourceTree = "<group>";
 		};
@@ -266,6 +279,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NapCatInstaller/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -295,6 +309,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NapCatInstaller/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
