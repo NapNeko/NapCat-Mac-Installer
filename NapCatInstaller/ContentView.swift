@@ -115,7 +115,7 @@ struct ContentView: View {
                 return
             }
             switch loader {
-            case originalLoader:
+            case let l where PatchStatus.originalLoaders.contains(l):
                 patchStatus = .original
             case napcatLoader:
                 patchStatus = .napcat

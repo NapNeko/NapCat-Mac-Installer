@@ -159,9 +159,14 @@ enum PatchStatus: Equatable {
     var patched: Bool {
         return self == .napcat
     }
+
+    static let originalLoaders = [
+        "./application.asar/app_launcher/index.js",
+        "./application/app_launcher/index.js",
+        "./app_launcher/index.js",
+    ]
 }
 
-let originalLoader = "./application/app_launcher/index.js"
 let napcatLoader = "../../../../..\(docURL.path)/loadNapCat.js"
 
 func getAppLoader() throws -> String? {
@@ -177,6 +182,7 @@ private let loaderURL = docURL.appendingPathComponent("loadNapCat.js")
 private func createLoader() throws {
     try #"""
     const hasNapcatParam = process.argv.includes('--no-sandbox');
+    const package = require('/Applications/QQ.app/Contents/Resources/app/package.json');
 
     if (hasNapcatParam) {
         (async () => {
@@ -184,9 +190,13 @@ private func createLoader() throws {
         })();
     } else {
         require('\#(appURL.path)/app_launcher/index.js');
-        setTimeout(() => {
-            global.launcher.installPathPkgJson.main = '\#(originalLoader)';
-        }, 0);
+        setImmediate(() => {
+            global.launcher.installPathPkgJson.main = ((version) => {
+                if (version >= 29271) return "./application.asar/app_launcher/index.js";
+                if (version >= 28060) return "./application/app_launcher/index.js";
+                return "./app_launcher/index.js";
+            })(package.buildVersion);
+        });
     }
     """#
     .write(to: loaderURL, atomically: true, encoding: .utf8)
