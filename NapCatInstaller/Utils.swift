@@ -10,7 +10,9 @@ import Foundation
 import ZIPFoundation
 
 let appURL = URL(fileURLWithPath: "/Applications/QQ.app/Contents/Resources/app")
-let docURL = URL(fileURLWithPath: "/Users/\(NSUserName())/Library/Containers/com.tencent.qq/Data/Documents")
+let containerURL = URL(fileURLWithPath: "/Users/\(NSUserName())/Library/Containers/com.tencent.qq/Data")
+let docURL = containerURL.appendingPathComponent("Documents", isDirectory: true)
+let datURL = containerURL.appendingPathComponent("Library/Application Support/QQ/NapCat", isDirectory: true)
 
 private func getJSONObject(url: URL) throws -> [NSString: Any]? {
     guard FileManager.default.fileExists(atPath: url.path) else { return nil }
@@ -217,10 +219,23 @@ func getPatchedPackage() throws {
 }
 
 let napcatInstructions = #"""
-# \#(NSLocalizedString("命令行启动，注入 NapCat", comment: ""))
-$ /Applications/QQ.app/Contents/MacOS/QQ --no-sandbox
-# \#(NSLocalizedString("参数可以加 -q <QQ号> 快速登录", comment: ""))
+    # \#(NSLocalizedString("命令行启动，注入 NapCat", comment: ""))
+    $ /Applications/QQ.app/Contents/MacOS/QQ --no-sandbox
+    # \#(NSLocalizedString("参数可以加 -q <QQ号> 快速登录", comment: ""))
 
-# \#(NSLocalizedString("正常启动 QQ GUI，不注入 NapCat", comment: ""))
-$ open -a QQ.app -n
-"""#
+    # \#(NSLocalizedString("正常启动 QQ GUI，不注入 NapCat", comment: ""))
+    $ open -a QQ.app -n
+    """#
+
+private let webuiURL = datURL.appendingPathComponent("config/webui.json", isDirectory: false)
+
+func getWebUILink() throws -> URL? {
+    guard let dict = try getJSONObject(url: webuiURL),
+        let port = dict["port"] as? Int,
+        let prefix = dict["prefix"] as? String,
+        let token = dict["token"] as? String
+    else {
+        return nil
+    }
+    return URL(string: "http://127.0.0.1:\(port)\(prefix)/webui?token=\(token)")
+}

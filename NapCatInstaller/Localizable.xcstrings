@@ -307,6 +307,16 @@
         }
       }
     },
+    "打开WebUI…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open WebUI…"
+          }
+        }
+      }
+    },
     "更新" : {
       "localizations" : {
         "en" : {

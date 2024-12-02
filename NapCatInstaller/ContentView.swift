@@ -66,6 +66,11 @@ struct ContentView: View {
             if showUsage {
                 NapcatUsageView()
             }
+            if let url = try? getWebUILink() {
+                Button("打开WebUI…") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
         }
         .padding()
         .animation(.default, value: qqVersion)
@@ -93,7 +98,7 @@ struct ContentView: View {
     private func updateNapcatVersion() async {
         do {
             guard let local = try getLocalNapcat(),
-                  let remote = try await getRemoteNapcat()
+                let remote = try await getRemoteNapcat()
             else {
                 napcatVersion = .missing
                 return
