@@ -45,7 +45,6 @@ class DownloadDelegate: NSObject, URLSessionDownloadDelegate, URLSessionDelegate
     
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
         let fileManager = FileManager.default
-        // 将系统临时文件复制到 napcat 目录下的稳定位置，防止系统过早清理
         let destinationURL = napcatURL.appendingPathComponent("download.zip")
         do {
             if fileManager.fileExists(atPath: destinationURL.path) {
@@ -161,20 +160,14 @@ func getLocalNapcat() throws -> String? {
 }
 
 func getRemoteNapcat() async throws -> String? {
-    let url = URL(string: "https://github.com/NapNeko/NapCatQQ/releases/latest")!
-    var request = URLRequest(url: url)
-    request.httpMethod = "HEAD"
-    let (_, response) = try await URLSession.shared.data(for: request)
+    let url = URL(string: "https://raw.githubusercontent.com/NapNeko/NapCatQQ/refs/heads/main/package.json")!
+    let (data, response) = try await URLSession.shared.data(from: url)
     guard let httpResponse = response as? HTTPURLResponse,
-          httpResponse.statusCode == 302,
-          let location = httpResponse.allHeaderFields["Location"] as? String else {
+          httpResponse.statusCode == 200 else {
         return nil
     }
-    if let versionPart = location.split(separator: "/").last,
-       let versionString = versionPart.split(separator: "v").last {
-        return String(versionString)
-    }
-    return nil
+    let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+    return json?["version"] as? String
 }
 
 func removeNapcat() throws {
