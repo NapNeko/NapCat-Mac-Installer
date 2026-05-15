@@ -275,7 +275,7 @@ struct GitHubProxy: Identifiable, Hashable {
         config.timeoutIntervalForResource = 5.0
         let totalProxies = allProxies.filter { !$0.baseURL.isEmpty }.count
         var testedCount = 0
-        return try await withThrowingTaskGroup(of: (GitHubProxy, TimeInterval).self) { group in
+        return await withThrowingTaskGroup(of: (GitHubProxy, TimeInterval).self) { group in
             for proxy in allProxies where !proxy.baseURL.isEmpty {
                 group.addTask {
                     let session = URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
@@ -309,7 +309,7 @@ struct GitHubProxy: Identifiable, Hashable {
                         fastestProxy = proxy
                         progress?.addLog(String(format: "发现更快代理: %@ (%.2f秒) [%d/%d]", proxy.name, time, testedCount, totalProxies))
                     }
-                case .failure(let error):
+                case .failure(_):
                     failureCount += 1
                     if testedCount % 5 == 0 {
                         progress?.addLog("测速进度: \(testedCount)/\(totalProxies) (成功: \(successCount), 失败: \(failureCount))")
