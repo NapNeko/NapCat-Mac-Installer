@@ -160,14 +160,11 @@ func getLocalNapcat() throws -> String? {
 }
 
 func getRemoteNapcat() async throws -> String? {
-    let url = URL(string: "https://raw.githubusercontent.com/NapNeko/NapCatQQ/refs/heads/main/package.json")!
-    let (data, response) = try await URLSession.shared.data(from: url)
-    guard let httpResponse = response as? HTTPURLResponse,
-          httpResponse.statusCode == 200 else {
-        return nil
-    }
-    let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-    return json?["version"] as? String
+    let (data, _) = try await URLSession.shared.data(from: URL(string: "https://api.github.com/repos/NapNeko/NapCatQQ/releases/latest")!)
+    let obj = try JSONSerialization.jsonObject(with: data)
+    guard let dict = obj as? [NSString: Any] else { return nil }
+    guard let tagName = dict["tag_name"] as? String else { return nil }
+    return tagName.replacingOccurrences(of: "v", with: "")
 }
 
 func removeNapcat() throws {
@@ -341,12 +338,16 @@ func installNapcat(proxy: GitHubProxy? = nil, progress: InstallationProgress? = 
     progress?.updateProgress(0.0)
     progress?.addLog("开始安装 NapCat...")
     if fileManager.fileExists(atPath: napcatURL.path) {
-        progress?.addLog("移除已存在的 NapCat: \(napcatURL.path)")
+        progress?.addLog("清空已存在的 NapCat 文件夹内容: \(napcatURL.path)")
         do {
-            try fileManager.removeItem(at: napcatURL)
-            progress?.addLog("移除完成")
+            let contents = try fileManager.contentsOfDirectory(atPath: napcatURL.path)
+            for item in contents {
+                let itemURL = napcatURL.appendingPathComponent(item)
+                try fileManager.removeItem(at: itemURL)
+            }
+            progress?.addLog("清空完成")
         } catch {
-            progress?.addLog("移除失败: \(error.localizedDescription)")
+            progress?.addLog("清空失败: \(error.localizedDescription)")
             throw error
         }
     }
@@ -404,6 +405,27 @@ func installNapcat(proxy: GitHubProxy? = nil, progress: InstallationProgress? = 
     }
     downloadProgress.updateProgress(0.95)
     downloadProgress.addLog("解压完成")
+    let packageJsonURL = napcatURL.appendingPathComponent("package.json")
+    do {
+        guard fileManager.fileExists(atPath: packageJsonURL.path) else {
+            downloadProgress.addLog("错误: package.json 不存在于解压目录中")
+            throw NSError(domain: "InstallError", code: 1, userInfo: [NSLocalizedDescriptionKey: "package.json not found"])
+        }
+        let jsonData = try Data(contentsOf: packageJsonURL)
+        var jsonObject = try JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any]
+        guard jsonObject != nil else {
+            downloadProgress.addLog("错误: package.json 格式无效")
+            throw NSError(domain: "InstallError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid JSON"])
+        }
+        let newVersion = try await getRemoteNapcat()
+        jsonObject?["version"] = newVersion
+        let newJsonData = try JSONSerialization.data(withJSONObject: jsonObject!, options: .prettyPrinted)
+        try newJsonData.write(to: packageJsonURL)
+        downloadProgress.addLog("已修改 version 为: \(String(describing: newVersion))")
+    } catch {
+        downloadProgress.addLog("修改 version 失败: \(error.localizedDescription)")
+        throw error
+    }
     try? fileManager.removeItem(at: downloadLocation)
     downloadProgress.updateProgress(1.0)
     downloadProgress.addLog("安装完成")
