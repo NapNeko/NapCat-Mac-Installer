@@ -1,0 +1,336 @@
+{
+  "source": "/Users/sylker/Downloads/NapCat-Mac-Installer/NapCatInstaller/ContentView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "打开WebUI…",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 67
+        }
+      },
+      {
+        "comment": "",
+        "key": "QQ版本",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 30
+        }
+      },
+      {
+        "comment": "",
+        "key": "NapCat版本",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 31
+        }
+      },
+      {
+        "comment": "",
+        "key": "程序入口",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 32
+        }
+      },
+      {
+        "comment": "",
+        "key": "代理",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 51
+        }
+      },
+      {
+        "comment": "",
+        "key": "刷新",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 46
+        }
+      },
+      {
+        "comment": "",
+        "key": "自动检测",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 52
+        }
+      },
+      {
+        "comment": "",
+        "key": " 正在读取…",
+        "location": {
+          "startingColumn": 63,
+          "startingLine": 139
+        }
+      },
+      {
+        "comment": "",
+        "key": " 未安装",
+        "location": {
+          "startingColumn": 92,
+          "startingLine": 141
+        }
+      },
+      {
+        "comment": "",
+        "key": " %@",
+        "location": {
+          "startingColumn": 88,
+          "startingLine": 143
+        }
+      },
+      {
+        "comment": "",
+        "key": " 发生错误",
+        "location": {
+          "startingColumn": 83,
+          "startingLine": 145
+        }
+      },
+      {
+        "comment": "",
+        "key": " 正在加载…",
+        "location": {
+          "startingColumn": 63,
+          "startingLine": 156
+        }
+      },
+      {
+        "comment": "",
+        "key": " 未安装",
+        "location": {
+          "startingColumn": 92,
+          "startingLine": 158
+        }
+      },
+      {
+        "comment": "",
+        "key": " %@，可升级%@",
+        "location": {
+          "startingColumn": 86,
+          "startingLine": 160
+        }
+      },
+      {
+        "comment": "",
+        "key": " %@，已是最新",
+        "location": {
+          "startingColumn": 88,
+          "startingLine": 162
+        }
+      },
+      {
+        "comment": "",
+        "key": " 发生错误",
+        "location": {
+          "startingColumn": 83,
+          "startingLine": 164
+        }
+      },
+      {
+        "comment": "",
+        "key": " 正在读取…",
+        "location": {
+          "startingColumn": 63,
+          "startingLine": 175
+        }
+      },
+      {
+        "comment": "",
+        "key": " 原版QQ",
+        "location": {
+          "startingColumn": 86,
+          "startingLine": 177
+        }
+      },
+      {
+        "comment": "",
+        "key": " NapCat",
+        "location": {
+          "startingColumn": 88,
+          "startingLine": 179
+        }
+      },
+      {
+        "comment": "",
+        "key": " 自定义 %@",
+        "location": {
+          "startingColumn": 92,
+          "startingLine": 181
+        }
+      },
+      {
+        "comment": "",
+        "key": " 发生错误",
+        "location": {
+          "startingColumn": 83,
+          "startingLine": 183
+        }
+      },
+      {
+        "comment": "",
+        "key": "发生错误",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 233
+        }
+      },
+      {
+        "comment": "",
+        "key": "发生错误",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 250
+        }
+      },
+      {
+        "comment": "",
+        "key": "请先还原再卸载",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 256
+        }
+      },
+      {
+        "comment": "",
+        "key": "卸载",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 248
+        }
+      },
+      {
+        "comment": "",
+        "key": "好",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 251
+        }
+      },
+      {
+        "comment": "",
+        "key": "安装",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 204
+        }
+      },
+      {
+        "comment": "",
+        "key": "安装",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 223
+        }
+      },
+      {
+        "comment": "",
+        "key": "更新",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 225
+        }
+      },
+      {
+        "comment": "",
+        "key": "好",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 234
+        }
+      },
+      {
+        "comment": "",
+        "key": "发生错误",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 291
+        }
+      },
+      {
+        "comment": "",
+        "key": "如果要还原，请将备份的package.json文件放回",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 298
+        }
+      },
+      {
+        "comment": "",
+        "key": "，然后点击刷新",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 301
+        }
+      },
+      {
+        "comment": "",
+        "key": "QQ应用目录",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 300
+        }
+      },
+      {
+        "comment": "",
+        "key": "请备份",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 274
+        }
+      },
+      {
+        "comment": "",
+        "key": "下的package.json文件",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 276
+        }
+      },
+      {
+        "comment": "",
+        "key": "QQ应用目录",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 275
+        }
+      },
+      {
+        "comment": "",
+        "key": "然后使用此",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 279
+        }
+      },
+      {
+        "comment": "",
+        "key": "覆盖，最后点击刷新",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 288
+        }
+      },
+      {
+        "comment": "",
+        "key": "修改的文件",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 280
+        }
+      },
+      {
+        "comment": "",
+        "key": "好",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 292
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,23 @@
+{
+  "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/ZIPFoundation.build/Debug/ZIPFoundation.build/DerivedSources/resource_bundle_accessor.swift" : {
+    "const-values" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/ZIPFoundation.build/Debug/ZIPFoundation.build/Objects-normal/arm64/resource_bundle_accessor.swiftconstvalues",
+    "dependencies" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/ZIPFoundation.build/Debug/ZIPFoundation.build/Objects-normal/arm64/resource_bundle_accessor.d",
+    "diagnostics" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/ZIPFoundation.build/Debug/ZIPFoundation.build/Objects-normal/arm64/resource_bundle_accessor.dia",
+    "object" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/ZIPFoundation.build/Debug/ZIPFoundation.build/Objects-normal/arm64/resource_bundle_accessor.o",
+    "swift-dependencies" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/ZIPFoundation.build/Debug/ZIPFoundation.build/Objects-normal/arm64/resource_bundle_accessor.swiftdeps"
+  },
+  "/Users/sylker/Library/Developer/Xcode/DerivedData/NapCatInstaller-grtmbceoosnvraaroubzausbtivh/SourcePackages/checkouts/ZIPFoundation/Sources/ZIPFoundation/Archive+BackingConfiguration.swift" : {
+    "const-values" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/ZIPFoundation.build/Debug/ZIPFoundation.build/Objects-normal/arm64/Archive+BackingConfiguration.swiftconstvalues",
+    "dependencies" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/ZIPFoundation.build/Debug/ZIPFoundation.build/Objects-normal/arm64/Archive+BackingConfiguration.d",
+    "diagnostics" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/ZIPFoundation.build/Debug/ZIPFoundation.build/Objects-normal/arm64/Archive+BackingConfiguration.dia",
+    "object" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/ZIPFoundation.build/Debug/ZIPFoundation.build/Objects-normal/arm64/Archive+BackingConfiguration.o",
+    "swift-dependencies" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/ZIPFoundation.build/Debug/ZIPFoundation.build/Objects-normal/arm64/Archive+BackingConfiguration.swiftdeps"
+  },
+  "/Users/sylker/Library/Developer/Xcode/DerivedData/NapCatInstaller-grtmbceoosnvraaroubzausbtivh/SourcePackages/checkouts/ZIPFoundation/Sources/ZIPFoundation/Archive+Deprecated.swift" : {
+    "const-values" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/ZIPFoundation.build/Debug/ZIPFoundation.build/Objects-normal/arm64/Archive+Deprecated.swiftconstvalues",
+    "dependencies" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/ZIPFoundation.build/Debug/ZIPFoundation.build/Objects-normal/arm64/Archive+Deprecated.d",
+    "diagnostics" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/ZIPFoundation.build/Debug/ZIPFoundation.build/Objects-normal/arm64/Archive+Deprecated.dia",
+    "object" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/ZIPFoundation.build/Debug/ZIPFoundation.build/Objects-normal/arm64/Archive+Deprecated.o",
+    "swift-dependencies" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/ZIPFoundation.build/Debug/ZIPFoundation.build/Objects-normal/arm64/Archive+Deprecated.swiftdeps"
+  }
+}

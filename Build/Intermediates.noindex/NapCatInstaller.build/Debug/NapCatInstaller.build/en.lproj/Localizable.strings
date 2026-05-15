@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key> %@</key>
+	<string> %@</string>
+	<key> %@，可升级%@</key>
+	<string> %1$@, new version %2$@ available</string>
+	<key> %@，已是最新</key>
+	<string> %@, up to date</string>
+	<key> NapCat</key>
+	<string> NapCat</string>
+	<key> 原版QQ</key>
+	<string> Original QQ</string>
+	<key> 发生错误</key>
+	<string> Failed</string>
+	<key> 未安装</key>
+	<string> Not installed</string>
+	<key> 正在加载…</key>
+	<string> Loading...</string>
+	<key> 正在读取…</key>
+	<string> Loading...</string>
+	<key> 自定义 %@</key>
+	<string> Custom %@</string>
+	<key>NapCat版本</key>
+	<string>NapCat Version</string>
+	<key>QQ应用目录</key>
+	<string>QQ app directory</string>
+	<key>QQ版本</key>
+	<string>QQ Version</string>
+	<key>gh-proxy</key>
+	<string>gh-proxy</string>
+	<key>ghproxy</key>
+	<string>ghproxy</string>
+	<key>haod</key>
+	<string>haod</string>
+	<key>moeyy</key>
+	<string>moeyy</string>
+	<key>下的package.json文件</key>
+	<string>.</string>
+	<key>不使用</key>
+	<string>None</string>
+	<key>代理</key>
+	<string>Proxy</string>
+	<key>修改的文件</key>
+	<string>modified version</string>
+	<key>刷新</key>
+	<string>Reload</string>
+	<key>卸载</key>
+	<string>Uninstall</string>
+	<key>参数可以加 -q &lt;QQ号&gt; 快速登录</key>
+	<string>quick login by adding -q &lt;QQ number&gt;</string>
+	<key>发生错误</key>
+	<string>Error</string>
+	<key>命令行启动，注入 NapCat</key>
+	<string>Launch NapCat from shell</string>
+	<key>好</key>
+	<string>OK</string>
+	<key>如果要还原，请将备份的package.json文件放回</key>
+	<string>To restore the patch, please replace package.json under</string>
+	<key>安装</key>
+	<string>Install</string>
+	<key>打开WebUI…</key>
+	<string>Open WebUI…</string>
+	<key>更新</key>
+	<string>Upgrade</string>
+	<key>正常启动 QQ GUI，不注入 NapCat</key>
+	<string>Launch original QQ GUI</string>
+	<key>然后使用此</key>
+	<string>, and replace it with this</string>
+	<key>程序入口</key>
+	<string>Program Entry</string>
+	<key>自动检测</key>
+	<string>Automatic</string>
+	<key>覆盖，最后点击刷新</key>
+	<string>. Click reload.</string>
+	<key>请先还原再卸载</key>
+	<string>Please restore the patch before uninstallation</string>
+	<key>请备份</key>
+	<string>Please backup package.json under</string>
+	<key>，然后点击刷新</key>
+	<string>with the backup, and click reload.</string>
+</dict>
+</plist>

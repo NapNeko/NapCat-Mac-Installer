@@ -3,17 +3,16 @@
 //  NapCatInstaller
 //
 //  Created by hguandl on 2024/10/1.
+//  Modified by SweelLong on 2026/5/15.
 //
 
 import SwiftUI
 
 struct ContentView: View {
     @AppStorage("GitHubProxy") private var proxy: GitHubProxy?
-
     @State private var qqVersion = QQVersion.loading
     @State private var patchStatus = PatchStatus.loading
     @State private var napcatVersion = NapcatVersion.loading
-
     @State private var buttonClicked = false
 
     private var showPatch: Bool {
@@ -32,7 +31,6 @@ struct ContentView: View {
                     Text("NapCat版本")
                     Text("程序入口")
                 }
-
                 VStack(alignment: .leading, spacing: 5) {
                     QQVersionView(version: qqVersion)
                     NapcatVersionView(version: napcatVersion)
@@ -52,11 +50,10 @@ struct ContentView: View {
                 }
                 Picker("代理", selection: $proxy) {
                     Text("自动检测").tag(GitHubProxy?.none)
-                    Text("不使用").tag(GitHubProxy.direct)
-                    Text("moeyy").tag(GitHubProxy.moeyy)
-                    Text("ghproxy").tag(GitHubProxy.ghproxy)
-                    Text("gh-proxy").tag(GitHubProxy.ghProxy)
-                    Text("haod").tag(GitHubProxy.haod)
+                    ForEach(GitHubProxy.allCases, id: \.self) { proxyCase in
+                        Text(proxyCase.name)
+                            .tag(proxyCase as GitHubProxy?)
+                    }
                 }
                 .frame(maxWidth: 150)
             }

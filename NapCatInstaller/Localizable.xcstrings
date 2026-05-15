@@ -117,7 +117,14 @@
         }
       }
     },
+    "boki" : {
+
+    },
+    "ednovas" : {
+
+    },
     "gh-proxy" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -128,6 +135,7 @@
       }
     },
     "ghproxy" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -137,7 +145,11 @@
         }
       }
     },
+    "GitHub" : {
+
+    },
     "haod" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -147,7 +159,11 @@
         }
       }
     },
+    "jasonzeng" : {
+
+    },
     "moeyy" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -166,6 +182,9 @@
           }
         }
       }
+    },
+    "nxnow" : {
+
     },
     "QQ应用目录" : {
       "localizations" : {
@@ -198,6 +217,7 @@
       }
     },
     "不使用" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

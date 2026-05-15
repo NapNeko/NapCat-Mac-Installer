@@ -1,0 +1,49 @@
+{
+  "" : {
+    "diagnostics" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/NapCatInstaller-primary.dia",
+    "emit-module-dependencies" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/NapCatInstaller-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/NapCatInstaller-primary-emit-module.dia",
+    "pch" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/NapCatInstaller-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/NapCatInstaller-primary.swiftdeps"
+  },
+  "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/GeneratedAssetSymbols~partial.swiftmodule"
+  },
+  "/Users/sylker/Downloads/NapCat-Mac-Installer/NapCatInstaller/ContentView.swift" : {
+    "const-values" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/ContentView.swiftconstvalues",
+    "dependencies" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/ContentView.d",
+    "diagnostics" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/ContentView.dia",
+    "index-unit-output-path" : "/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/ContentView.o",
+    "llvm-bc" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/ContentView.bc",
+    "object" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/ContentView.o",
+    "swift-dependencies" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/ContentView.swiftdeps",
+    "swiftmodule" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/ContentView~partial.swiftmodule"
+  },
+  "/Users/sylker/Downloads/NapCat-Mac-Installer/NapCatInstaller/NapCatInstallerApp.swift" : {
+    "const-values" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/NapCatInstallerApp.swiftconstvalues",
+    "dependencies" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/NapCatInstallerApp.d",
+    "diagnostics" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/NapCatInstallerApp.dia",
+    "index-unit-output-path" : "/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/NapCatInstallerApp.o",
+    "llvm-bc" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/NapCatInstallerApp.bc",
+    "object" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/NapCatInstallerApp.o",
+    "swift-dependencies" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/NapCatInstallerApp.swiftdeps",
+    "swiftmodule" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/NapCatInstallerApp~partial.swiftmodule"
+  },
+  "/Users/sylker/Downloads/NapCat-Mac-Installer/NapCatInstaller/Utils.swift" : {
+    "const-values" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/Utils.swiftconstvalues",
+    "dependencies" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/Utils.d",
+    "diagnostics" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/Utils.dia",
+    "index-unit-output-path" : "/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/Utils.o",
+    "llvm-bc" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/Utils.bc",
+    "object" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/Utils.o",
+    "swift-dependencies" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/Utils.swiftdeps",
+    "swiftmodule" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/Utils~partial.swiftmodule"
+  }
+}

@@ -3,6 +3,7 @@
 //  NapCatInstaller
 //
 //  Created by hguandl on 2024/10/2.
+//  Modified by SweelLong on 2026/5/15.
 //
 
 import AppKit
@@ -61,11 +62,22 @@ func getLocalNapcat() throws -> String? {
 }
 
 func getRemoteNapcat() async throws -> String? {
-    let (data, _) = try await URLSession.shared.data(from: URL(string: "https://nclatest.znin.net/")!)
-    let obj = try JSONSerialization.jsonObject(with: data)
-    guard let dict = obj as? [NSString: Any] else { return nil }
-    guard let tagName = dict["tag_name"] as? String else { return nil }
-    return tagName.replacingOccurrences(of: "v", with: "")
+    // 通过重定向拿到最新版本号
+    let url = URL(string: "https://github.com/NapNeko/NapCatQQ/releases/latest")!
+    var request = URLRequest(url: url)
+    request.httpMethod = "HEAD"
+    let (_, response) = try await URLSession.shared.data(for: request)
+    guard let httpResponse = response as? HTTPURLResponse,
+          httpResponse.statusCode == 302,
+          let location = httpResponse.allHeaderFields["Location"] as? String else {
+        return nil
+    }
+    // location 格式: https://github.com/NapNeko/NapCatQQ/releases/tag/v?.?.?
+    if let versionPart = location.split(separator: "/").last,
+       let versionString = versionPart.split(separator: "v").last {
+        return String(versionString)
+    }
+    return nil
 }
 
 func removeNapcat() throws {
@@ -83,15 +95,15 @@ enum GitHubProxy: String, CaseIterable {
     var name: String {
         switch self {
         case .direct:
-            NSLocalizedString("不使用", comment: "")
+            NSLocalizedString("GitHub", comment: "")
         case .moeyy:
-            NSLocalizedString("moeyy", comment: "")
+            NSLocalizedString("jasonzeng", comment: "")
         case .ghproxy:
-            NSLocalizedString("ghproxy", comment: "")
+            NSLocalizedString("ednovas", comment: "")
         case .ghProxy:
-            NSLocalizedString("gh-proxy", comment: "")
+            NSLocalizedString("boki", comment: "")
         case .haod:
-            NSLocalizedString("haod", comment: "")
+            NSLocalizedString("nxnow", comment: "")
         }
     }
 
@@ -100,13 +112,13 @@ enum GitHubProxy: String, CaseIterable {
         case .direct:
             URL(string: resource)!
         case .moeyy:
-            URL(string: "https://github.moeyy.xyz/\(resource)")!
+            URL(string: "https://gh.jasonzeng.dev/\(resource)")!
         case .ghproxy:
-            URL(string: "https://mirror.ghproxy.com/\(resource)")!
+            URL(string: "https://github.ednovas.xyz/\(resource)")!
         case .ghProxy:
-            URL(string: "https://gh-proxy.com/\(resource)")!
+            URL(string: "https://github.boki.moe/\(resource)")!
         case .haod:
-            URL(string: "https://x.haod.me/\(resource)")!
+            URL(string: "https://gh.nxnow.top/\(resource)")!
         }
     }
 
@@ -137,18 +149,37 @@ enum GitHubProxy: String, CaseIterable {
 func installNapcat(proxy: GitHubProxy? = nil) async throws {
     let fileManager = FileManager.default
     if fileManager.fileExists(atPath: napcatURL.path) {
+        print("Removing existing NapCat at \(napcatURL.path)")
         try fileManager.removeItem(at: napcatURL)
     }
+    print("Creating directory at \(napcatURL.path)")
     try fileManager.createDirectory(at: napcatURL, withIntermediateDirectories: true)
+
     let asset = "https://github.com/NapNeko/NapCatQQ/releases/latest/download/NapCat.Shell.zip"
     let url: URL
     if let proxy {
         url = proxy.url(for: asset)
     } else {
+        print("Auto-detecting GitHub proxy...")
         url = try await GitHubProxy.auto().url(for: asset)
     }
-    let (zip, _) = try await URLSession.shared.download(from: url)
-    try fileManager.unzipItem(at: zip, to: napcatURL)
+
+    print("Starting download from \(url)")
+    let (data, response) = try await URLSession.shared.data(for: URLRequest(url: url))
+    guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+        throw URLError(.badServerResponse)
+    }
+    print("Downloaded \(data.count) bytes")
+
+    let tempZip = fileManager.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("zip")
+    try data.write(to: tempZip)
+    print("Saved zip to \(tempZip.path)")
+
+    print("Unzipping to \(napcatURL.path)")
+    try fileManager.unzipItem(at: tempZip, to: napcatURL)
+    print("Unzip finished")
+
+    try? fileManager.removeItem(at: tempZip)
 }
 
 enum PatchStatus: Equatable {
