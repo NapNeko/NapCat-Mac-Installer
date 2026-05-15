@@ -1,19 +1,18 @@
-//
-//  ContentView.swift
-//  NapCatInstaller
-//
-//  Created by hguandl on 2024/10/1.
-//  Modified by SweelLong on 2026/5/15.
-//
-
 import SwiftUI
 
 struct ContentView: View {
-    @AppStorage("GitHubProxy") private var proxy: GitHubProxy?
+    @AppStorage("GitHubProxyIndex") private var proxyIndex: Int = -1
     @State private var qqVersion = QQVersion.loading
     @State private var patchStatus = PatchStatus.loading
     @State private var napcatVersion = NapcatVersion.loading
     @State private var buttonClicked = false
+    
+    private var proxy: GitHubProxy? {
+        if proxyIndex < 0 || proxyIndex >= GitHubProxy.allProxies.count {
+            return nil
+        }
+        return GitHubProxy.allProxies[proxyIndex]
+    }
 
     private var showPatch: Bool {
         return napcatVersion.installed || patchStatus.patched
@@ -48,11 +47,11 @@ struct ContentView: View {
                 NapcatInstallationButton(version: napcatVersion, status: patchStatus, proxy: proxy) {
                     buttonClicked.toggle()
                 }
-                Picker("代理", selection: $proxy) {
-                    Text("自动检测").tag(GitHubProxy?.none)
-                    ForEach(GitHubProxy.allCases, id: \.self) { proxyCase in
-                        Text(proxyCase.name)
-                            .tag(proxyCase as GitHubProxy?)
+                Picker("代理", selection: $proxyIndex) {
+                    Text("自动检测").tag(-1)
+                    ForEach(Array(GitHubProxy.allProxies.enumerated()), id: \.offset) { index, proxyItem in
+                        Text(proxyItem.name)
+                            .tag(index)
                     }
                 }
                 .frame(maxWidth: 150)
@@ -132,7 +131,6 @@ struct ContentView: View {
 
 private struct QQVersionView: View {
     let version: QQVersion
-
     var body: some View {
         switch version {
         case .loading:
@@ -149,7 +147,6 @@ private struct QQVersionView: View {
 
 private struct NapcatVersionView: View {
     let version: NapcatVersion
-
     var body: some View {
         switch version {
         case .loading:
@@ -168,7 +165,6 @@ private struct NapcatVersionView: View {
 
 private struct PatchStatusView: View {
     let status: PatchStatus
-
     var body: some View {
         switch status {
         case .loading:
@@ -190,11 +186,11 @@ private struct NapcatInstallationButton: View {
     let status: PatchStatus
     let proxy: GitHubProxy?
     let refreshHandler: () -> Void
-
     @State private var loading = false
+    @State private var showLogs = false
     @State private var failed = false
     @State private var error: Error?
-
+    @StateObject private var installationProgress = InstallationProgress()
     var body: some View {
         switch version {
         case .loading, .failed:
@@ -205,35 +201,76 @@ private struct NapcatInstallationButton: View {
             }
             .disabled(true)
         case .missing, .outdated:
-            Button {
-                Task {
-                    loading = true
-                    do {
-                        try await installNapcat(proxy: proxy)
-                    } catch {
-                        failed = true
-                        self.error = error
+            VStack(alignment: .leading, spacing: 8) {
+                Button {
+                    Task {
+                        loading = true
+                        showLogs = true
+                        installationProgress.reset()
+                        installationProgress.isInstalling = true
+                        do {
+                            try await installNapcat(proxy: proxy, progress: installationProgress)
+                        } catch {
+                            failed = true
+                            self.error = error
+                        }
+                        installationProgress.isInstalling = false
+                        loading = false
+                        refreshHandler()
                     }
-                    loading = false
-                    refreshHandler()
+                } label: {
+                    switch version {
+                    case .missing:
+                        Label("安装", systemImage: "shippingbox.circle")
+                    case .outdated:
+                        Label("更新", systemImage: "arrow.up.circle")
+                    default:
+                        fatalError("Should not be reachable")
+                    }
                 }
-            } label: {
-                switch version {
-                case .missing:
-                    Label("安装", systemImage: "shippingbox.circle")
-                case .outdated:
-                    Label("更新", systemImage: "arrow.up.circle")
-                default:
-                    fatalError("Should not be reachable")
+                .alert("发生错误", isPresented: $failed, presenting: error) { _ in
+                    Button("好") { failed = false }
+                } message: { e in
+                    Text(e.localizedDescription)
                 }
-            }
-            .sheet(isPresented: $loading) {
-                ProgressView()
-            }
-            .alert("发生错误", isPresented: $failed, presenting: error) { _ in
-                Button("好") { failed = false }
-            } message: { e in
-                Text(e.localizedDescription)
+                if showLogs {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            ProgressView(value: installationProgress.progress) {
+                                Text("进度: \(Int(installationProgress.progress * 100))%")
+                            }
+                            .progressViewStyle(.linear)
+                            Button("清除") {
+                                showLogs = false
+                                installationProgress.reset()
+                            }
+                            .disabled(installationProgress.isInstalling)
+                        }
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 4) {
+                                ForEach(installationProgress.logs) { log in
+                                    HStack(alignment: .top, spacing: 8) {
+                                        Text(log.timestamp, style: .time)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                            .frame(width: 60, alignment: .leading)
+                                        Text(log.message)
+                                            .font(.system(.caption, design: .monospaced))
+                                            .textSelection(.enabled)
+                                        Spacer()
+                                    }
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .font(.system(.callout, design: .monospaced))
+                        .padding(.horizontal)
+                        .padding(.vertical, 5)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(.selection)
+                        .cornerRadius(5)
+                    }
+                }
             }
         case .latest:
             Button {
@@ -258,12 +295,59 @@ private struct NapcatInstallationButton: View {
     }
 }
 
+private struct InstallationProgressView: View {
+    let progress: InstallationProgress
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("安装进度")
+                .font(.headline)
+            ProgressView(value: progress.progress) {
+                Text("进度: \(Int(progress.progress * 100))%")
+            }
+            .progressViewStyle(.linear)
+            .frame(width: 400)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(progress.logs) { log in
+                        HStack(alignment: .top, spacing: 8) {
+                            Text(log.timestamp, style: .time)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .frame(width: 60, alignment: .leading)
+                            Text(log.message)
+                                .font(.system(.caption, design: .monospaced))
+                                .textSelection(.enabled)
+                            Spacer()
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .font(.system(.callout, design: .monospaced))
+            .padding(.horizontal)
+            .padding(.vertical, 5)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.selection)
+            .cornerRadius(5)
+            HStack {
+                Spacer()
+                Button("关闭") {
+                    if !progress.isInstalling {
+                        progress.reset()
+                    }
+                }
+                .disabled(progress.isInstalling)
+            }
+        }
+        .padding()
+        .frame(width: 500)
+    }
+}
+
 private struct NapcatPatchView: View {
     let status: PatchStatus
-
     @State private var failed = false
     @State private var error: Error?
-
     var body: some View {
         switch status {
         case .loading, .failed:

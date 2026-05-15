@@ -117,12 +117,6 @@
         }
       }
     },
-    "boki" : {
-
-    },
-    "ednovas" : {
-
-    },
     "gh-proxy" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -145,9 +139,6 @@
         }
       }
     },
-    "GitHub" : {
-
-    },
     "haod" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -158,9 +149,6 @@
           }
         }
       }
-    },
-    "jasonzeng" : {
-
     },
     "moeyy" : {
       "extractionState" : "stale",
@@ -182,9 +170,6 @@
           }
         }
       }
-    },
-    "nxnow" : {
-
     },
     "QQ应用目录" : {
       "localizations" : {
@@ -246,6 +231,9 @@
           }
         }
       }
+    },
+    "关闭" : {
+
     },
     "刷新" : {
       "localizations" : {
@@ -327,6 +315,9 @@
         }
       }
     },
+    "安装进度" : {
+
+    },
     "打开WebUI…" : {
       "localizations" : {
         "en" : {
@@ -356,6 +347,9 @@
           }
         }
       }
+    },
+    "清除" : {
+
     },
     "然后使用此" : {
       "localizations" : {
@@ -416,6 +410,9 @@
           }
         }
       }
+    },
+    "进度: %lld%%" : {
+
     }
   },
   "version" : "1.0"

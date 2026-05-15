@@ -1,8 +1,0 @@
-{
-  "" : {
-    "pch" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/NapCatInstaller-primary-Bridging-header.pch"
-  },
-  "/Users/sylker/Downloads/NapCat-Mac-Installer/NapCatInstaller/ContentView.swift" : {
-    "object" : "/Users/sylker/Downloads/NapCat-Mac-Installer/Build/Intermediates.noindex/NapCatInstaller.build/Debug/NapCatInstaller.build/Objects-normal/arm64/ContentView.__XCPREVIEW_THUNKSUFFIX__.preview-thunk.o"
-  }
-}

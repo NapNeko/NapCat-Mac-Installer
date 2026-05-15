@@ -1,17 +1,8 @@
-//
-//  NapCatInstallerApp.swift
-//  NapCatInstaller
-//
-//  Created by hguandl on 2024/10/1.
-//  Modified by SweelLong on 2026/5/15.
-//
-
 import SwiftUI
 
 @main
 struct NapCatInstallerApp: App {
     @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate
-
     var body: some Scene {
         WindowGroup {
             ContentView()

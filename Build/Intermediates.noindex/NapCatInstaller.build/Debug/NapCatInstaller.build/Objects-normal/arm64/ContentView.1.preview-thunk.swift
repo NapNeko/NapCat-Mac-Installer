@@ -4,22 +4,21 @@ import func SwiftUI.__designTimeInteger
 import func SwiftUI.__designTimeBoolean
 
 #sourceLocation(file: "/Users/sylker/Downloads/NapCat-Mac-Installer/NapCatInstaller/ContentView.swift", line: 1)
-//
-//  ContentView.swift
-//  NapCatInstaller
-//
-//  Created by hguandl on 2024/10/1.
-//  Modified by SweelLong on 2026/5/15.
-//
-
 import SwiftUI
 
 struct ContentView: View {
-    @AppStorage("GitHubProxy") private var proxy: GitHubProxy?
+    @AppStorage("GitHubProxyIndex") private var proxyIndex: Int = -1
     @State private var qqVersion = QQVersion.loading
     @State private var patchStatus = PatchStatus.loading
     @State private var napcatVersion = NapcatVersion.loading
     @State private var buttonClicked = false
+    
+    private var proxy: GitHubProxy? {
+        if proxyIndex < __designTimeInteger("#3023_0", fallback: 0) || proxyIndex >= GitHubProxy.allProxies.count {
+            return nil
+        }
+        return GitHubProxy.allProxies[proxyIndex]
+    }
 
     private var showPatch: Bool {
         return napcatVersion.installed || patchStatus.patched
@@ -30,14 +29,14 @@ struct ContentView: View {
     }
 
     var body: some View {
-        VStack(spacing: __designTimeInteger("#8042_0", fallback: 20)) {
+        VStack(spacing: __designTimeInteger("#3023_1", fallback: 20)) {
             HStack {
-                VStack(alignment: .trailing, spacing: __designTimeInteger("#8042_1", fallback: 5)) {
-                    Text(__designTimeString("#8042_2", fallback: "QQ版本"))
-                    Text(__designTimeString("#8042_3", fallback: "NapCat版本"))
-                    Text(__designTimeString("#8042_4", fallback: "程序入口"))
+                VStack(alignment: .trailing, spacing: __designTimeInteger("#3023_2", fallback: 5)) {
+                    Text(__designTimeString("#3023_3", fallback: "QQ版本"))
+                    Text(__designTimeString("#3023_4", fallback: "NapCat版本"))
+                    Text(__designTimeString("#3023_5", fallback: "程序入口"))
                 }
-                VStack(alignment: .leading, spacing: __designTimeInteger("#8042_5", fallback: 5)) {
+                VStack(alignment: .leading, spacing: __designTimeInteger("#3023_6", fallback: 5)) {
                     QQVersionView(version: qqVersion)
                     NapcatVersionView(version: napcatVersion)
                     PatchStatusView(status: patchStatus)
@@ -45,23 +44,23 @@ struct ContentView: View {
                 .foregroundColor(.secondary)
             }
             Divider()
-            HStack(spacing: __designTimeInteger("#8042_6", fallback: 15)) {
+            HStack(spacing: __designTimeInteger("#3023_7", fallback: 15)) {
                 Button {
                     buttonClicked.toggle()
                 } label: {
-                    Label(__designTimeString("#8042_7", fallback: "刷新"), systemImage: __designTimeString("#8042_8", fallback: "arrow.clockwise.circle"))
+                    Label(__designTimeString("#3023_8", fallback: "刷新"), systemImage: __designTimeString("#3023_9", fallback: "arrow.clockwise.circle"))
                 }
                 NapcatInstallationButton(version: napcatVersion, status: patchStatus, proxy: proxy) {
                     buttonClicked.toggle()
                 }
-                Picker(__designTimeString("#8042_9", fallback: "代理"), selection: $proxy) {
-                    Text(__designTimeString("#8042_10", fallback: "自动检测")).tag(GitHubProxy?.none)
-                    ForEach(GitHubProxy.allCases, id: \.self) { proxyCase in
-                        Text(proxyCase.name)
-                            .tag(proxyCase as GitHubProxy?)
+                Picker(__designTimeString("#3023_10", fallback: "代理"), selection: $proxyIndex) {
+                    Text(__designTimeString("#3023_11", fallback: "自动检测")).tag(__designTimeInteger("#3023_12", fallback: -1))
+                    ForEach(Array(GitHubProxy.allProxies.enumerated()), id: \.offset) { index, proxyItem in
+                        Text(proxyItem.name)
+                            .tag(index)
                     }
                 }
-                .frame(maxWidth: __designTimeInteger("#8042_11", fallback: 150))
+                .frame(maxWidth: __designTimeInteger("#3023_13", fallback: 150))
             }
             if showPatch {
                 NapcatPatchView(status: patchStatus)
@@ -70,7 +69,7 @@ struct ContentView: View {
                 NapcatUsageView()
             }
             if let url = try? getWebUILink() {
-                Button(__designTimeString("#8042_12", fallback: "打开WebUI…")) {
+                Button(__designTimeString("#3023_14", fallback: "打开WebUI…")) {
                     NSWorkspace.shared.open(url)
                 }
             }
@@ -119,7 +118,7 @@ struct ContentView: View {
     private func updatePatchStatus() {
         do {
             guard let loader = try getAppLoader() else {
-                patchStatus = .custom(__designTimeString("#8042_13", fallback: ""))
+                patchStatus = .custom(__designTimeString("#3023_15", fallback: ""))
                 return
             }
             switch loader {
@@ -138,55 +137,52 @@ struct ContentView: View {
 
 private struct QQVersionView: View {
     let version: QQVersion
-
     var body: some View {
         switch version {
         case .loading:
-            Text(Image(systemName: __designTimeString("#8042_14", fallback: "ellipsis.circle"))) + Text(__designTimeString("#8042_15", fallback: " 正在读取…"))
+            Text(Image(systemName: __designTimeString("#3023_16", fallback: "ellipsis.circle"))) + Text(__designTimeString("#3023_17", fallback: " 正在读取…"))
         case .missing:
-            Text(Image(systemName: __designTimeString("#8042_16", fallback: "questionmark.circle"))).foregroundColor(.yellow) + Text(__designTimeString("#8042_17", fallback: " 未安装"))
+            Text(Image(systemName: __designTimeString("#3023_18", fallback: "questionmark.circle"))).foregroundColor(.yellow) + Text(__designTimeString("#3023_19", fallback: " 未安装"))
         case .installed(let v):
-            Text(Image(systemName: __designTimeString("#8042_18", fallback: "checkmark.circle"))).foregroundColor(.green) + Text(" \(v)")
+            Text(Image(systemName: __designTimeString("#3023_20", fallback: "checkmark.circle"))).foregroundColor(.green) + Text(" \(v)")
         case .failed(let d):
-            (Text(Image(systemName: __designTimeString("#8042_19", fallback: "xmark.circle"))).foregroundColor(.red) + Text(__designTimeString("#8042_20", fallback: " 发生错误"))).help(d)
+            (Text(Image(systemName: __designTimeString("#3023_21", fallback: "xmark.circle"))).foregroundColor(.red) + Text(__designTimeString("#3023_22", fallback: " 发生错误"))).help(d)
         }
     }
 }
 
 private struct NapcatVersionView: View {
     let version: NapcatVersion
-
     var body: some View {
         switch version {
         case .loading:
-            Text(Image(systemName: __designTimeString("#8042_21", fallback: "ellipsis.circle"))) + Text(__designTimeString("#8042_22", fallback: " 正在加载…"))
+            Text(Image(systemName: __designTimeString("#3023_23", fallback: "ellipsis.circle"))) + Text(__designTimeString("#3023_24", fallback: " 正在加载…"))
         case .missing:
-            Text(Image(systemName: __designTimeString("#8042_23", fallback: "questionmark.circle"))).foregroundColor(.yellow) + Text(__designTimeString("#8042_24", fallback: " 未安装"))
+            Text(Image(systemName: __designTimeString("#3023_25", fallback: "questionmark.circle"))).foregroundColor(.yellow) + Text(__designTimeString("#3023_26", fallback: " 未安装"))
         case .outdated(let l, let r):
-            Text(Image(systemName: __designTimeString("#8042_25", fallback: "arrow.up.circle"))).foregroundColor(.blue) + Text(" \(l)，可升级\(r)")
+            Text(Image(systemName: __designTimeString("#3023_27", fallback: "arrow.up.circle"))).foregroundColor(.blue) + Text(" \(l)，可升级\(r)")
         case .latest(let v):
-            Text(Image(systemName: __designTimeString("#8042_26", fallback: "checkmark.circle"))).foregroundColor(.green) + Text(" \(v)，已是最新")
+            Text(Image(systemName: __designTimeString("#3023_28", fallback: "checkmark.circle"))).foregroundColor(.green) + Text(" \(v)，已是最新")
         case .failed(let d):
-            (Text(Image(systemName: __designTimeString("#8042_27", fallback: "xmark.circle"))).foregroundColor(.red) + Text(__designTimeString("#8042_28", fallback: " 发生错误"))).help(d)
+            (Text(Image(systemName: __designTimeString("#3023_29", fallback: "xmark.circle"))).foregroundColor(.red) + Text(__designTimeString("#3023_30", fallback: " 发生错误"))).help(d)
         }
     }
 }
 
 private struct PatchStatusView: View {
     let status: PatchStatus
-
     var body: some View {
         switch status {
         case .loading:
-            Text(Image(systemName: __designTimeString("#8042_29", fallback: "ellipsis.circle"))) + Text(__designTimeString("#8042_30", fallback: " 正在读取…"))
+            Text(Image(systemName: __designTimeString("#3023_31", fallback: "ellipsis.circle"))) + Text(__designTimeString("#3023_32", fallback: " 正在读取…"))
         case .original:
-            Text(Image(systemName: __designTimeString("#8042_31", fallback: "ellipsis.circle"))).foregroundColor(.blue) + Text(__designTimeString("#8042_32", fallback: " 原版QQ"))
+            Text(Image(systemName: __designTimeString("#3023_33", fallback: "ellipsis.circle"))).foregroundColor(.blue) + Text(__designTimeString("#3023_34", fallback: " 原版QQ"))
         case .napcat:
-            Text(Image(systemName: __designTimeString("#8042_33", fallback: "checkmark.circle"))).foregroundColor(.green) + Text(__designTimeString("#8042_34", fallback: " NapCat"))
+            Text(Image(systemName: __designTimeString("#3023_35", fallback: "checkmark.circle"))).foregroundColor(.green) + Text(__designTimeString("#3023_36", fallback: " NapCat"))
         case .custom(let loader):
-            Text(Image(systemName: __designTimeString("#8042_35", fallback: "questionmark.circle"))).foregroundColor(.yellow) + Text(" 自定义 \(loader)")
+            Text(Image(systemName: __designTimeString("#3023_37", fallback: "questionmark.circle"))).foregroundColor(.yellow) + Text(" 自定义 \(loader)")
         case .failed(let d):
-            (Text(Image(systemName: __designTimeString("#8042_36", fallback: "xmark.circle"))).foregroundColor(.red) + Text(__designTimeString("#8042_37", fallback: " 发生错误"))).help(d)
+            (Text(Image(systemName: __designTimeString("#3023_38", fallback: "xmark.circle"))).foregroundColor(.red) + Text(__designTimeString("#3023_39", fallback: " 发生错误"))).help(d)
         }
     }
 }
@@ -196,48 +192,50 @@ private struct NapcatInstallationButton: View {
     let status: PatchStatus
     let proxy: GitHubProxy?
     let refreshHandler: () -> Void
-
     @State private var loading = false
     @State private var failed = false
     @State private var error: Error?
-
+    @StateObject private var installationProgress = InstallationProgress()
     var body: some View {
         switch version {
         case .loading, .failed:
             Button {
-                fatalError(__designTimeString("#8042_38", fallback: "Should not be reachable"))
+                fatalError(__designTimeString("#3023_40", fallback: "Should not be reachable"))
             } label: {
-                Label(__designTimeString("#8042_39", fallback: "安装"), systemImage: __designTimeString("#8042_40", fallback: "shippingbox.circle"))
+                Label(__designTimeString("#3023_41", fallback: "安装"), systemImage: __designTimeString("#3023_42", fallback: "shippingbox.circle"))
             }
-            .disabled(__designTimeBoolean("#8042_41", fallback: true))
+            .disabled(__designTimeBoolean("#3023_43", fallback: true))
         case .missing, .outdated:
             Button {
                 Task {
-                    loading = __designTimeBoolean("#8042_42", fallback: true)
+                    loading = __designTimeBoolean("#3023_44", fallback: true)
+                    installationProgress.reset()
+                    installationProgress.isInstalling = __designTimeBoolean("#3023_45", fallback: true)
                     do {
-                        try await installNapcat(proxy: proxy)
+                        try await installNapcat(proxy: proxy, progress: installationProgress)
                     } catch {
-                        failed = __designTimeBoolean("#8042_43", fallback: true)
+                        failed = __designTimeBoolean("#3023_46", fallback: true)
                         self.error = error
                     }
-                    loading = __designTimeBoolean("#8042_44", fallback: false)
+                    installationProgress.isInstalling = __designTimeBoolean("#3023_47", fallback: false)
+                    loading = __designTimeBoolean("#3023_48", fallback: false)
                     refreshHandler()
                 }
             } label: {
                 switch version {
                 case .missing:
-                    Label(__designTimeString("#8042_45", fallback: "安装"), systemImage: __designTimeString("#8042_46", fallback: "shippingbox.circle"))
+                    Label(__designTimeString("#3023_49", fallback: "安装"), systemImage: __designTimeString("#3023_50", fallback: "shippingbox.circle"))
                 case .outdated:
-                    Label(__designTimeString("#8042_47", fallback: "更新"), systemImage: __designTimeString("#8042_48", fallback: "arrow.up.circle"))
+                    Label(__designTimeString("#3023_51", fallback: "更新"), systemImage: __designTimeString("#3023_52", fallback: "arrow.up.circle"))
                 default:
-                    fatalError(__designTimeString("#8042_49", fallback: "Should not be reachable"))
+                    fatalError(__designTimeString("#3023_53", fallback: "Should not be reachable"))
                 }
             }
             .sheet(isPresented: $loading) {
-                ProgressView()
+                InstallationProgressView(progress: installationProgress)
             }
-            .alert(__designTimeString("#8042_50", fallback: "发生错误"), isPresented: $failed, presenting: error) { _ in
-                Button(__designTimeString("#8042_51", fallback: "好")) { failed = __designTimeBoolean("#8042_52", fallback: false) }
+            .alert(__designTimeString("#3023_54", fallback: "发生错误"), isPresented: $failed, presenting: error) { _ in
+                Button(__designTimeString("#3023_55", fallback: "好")) { failed = __designTimeBoolean("#3023_56", fallback: false) }
             } message: { e in
                 Text(e.localizedDescription)
             }
@@ -246,30 +244,75 @@ private struct NapcatInstallationButton: View {
                 do {
                     try removeNapcat()
                 } catch {
-                    failed = __designTimeBoolean("#8042_53", fallback: true)
+                    failed = __designTimeBoolean("#3023_57", fallback: true)
                     self.error = error
                 }
                 refreshHandler()
             } label: {
-                Label(__designTimeString("#8042_54", fallback: "卸载"), systemImage: __designTimeString("#8042_55", fallback: "trash.circle"))
+                Label(__designTimeString("#3023_58", fallback: "卸载"), systemImage: __designTimeString("#3023_59", fallback: "trash.circle"))
             }
-            .alert(__designTimeString("#8042_56", fallback: "发生错误"), isPresented: $failed, presenting: error) { _ in
-                Button(__designTimeString("#8042_57", fallback: "好")) { failed = __designTimeBoolean("#8042_58", fallback: false) }
+            .alert(__designTimeString("#3023_60", fallback: "发生错误"), isPresented: $failed, presenting: error) { _ in
+                Button(__designTimeString("#3023_61", fallback: "好")) { failed = __designTimeBoolean("#3023_62", fallback: false) }
             } message: { e in
                 Text(e.localizedDescription)
             }
             .disabled(status.patched)
-            .help(__designTimeString("#8042_59", fallback: "请先还原再卸载"))
+            .help(__designTimeString("#3023_63", fallback: "请先还原再卸载"))
         }
+    }
+}
+
+private struct InstallationProgressView: View {
+    let progress: InstallationProgress
+    var body: some View {
+        VStack(spacing: __designTimeInteger("#3023_64", fallback: 20)) {
+            Text(__designTimeString("#3023_65", fallback: "安装进度"))
+                .font(.headline)
+            ProgressView(value: progress.progress) {
+                Text("进度: \(Int(progress.progress * __designTimeInteger("#3023_66", fallback: 100)))%")
+            }
+            .progressViewStyle(.linear)
+            .frame(width: __designTimeInteger("#3023_67", fallback: 400))
+            ScrollView {
+                VStack(alignment: .leading, spacing: __designTimeInteger("#3023_68", fallback: 4)) {
+                    ForEach(progress.logs) { log in
+                        HStack(alignment: .top, spacing: __designTimeInteger("#3023_69", fallback: 8)) {
+                            Text(log.timestamp, style: .time)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .frame(width: __designTimeInteger("#3023_70", fallback: 60), alignment: .leading)
+                            Text(log.message)
+                                .font(.system(.caption, design: .monospaced))
+                                .textSelection(.enabled)
+                            Spacer()
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(height: __designTimeInteger("#3023_71", fallback: 300))
+            .padding()
+            .background(Color(.textBackgroundColor))
+            .cornerRadius(__designTimeInteger("#3023_72", fallback: 8))
+            HStack {
+                Spacer()
+                Button(__designTimeString("#3023_73", fallback: "关闭")) {
+                    if !progress.isInstalling {
+                        progress.reset()
+                    }
+                }
+                .disabled(progress.isInstalling)
+            }
+        }
+        .padding()
+        .frame(width: __designTimeInteger("#3023_74", fallback: 500))
     }
 }
 
 private struct NapcatPatchView: View {
     let status: PatchStatus
-
     @State private var failed = false
     @State private var error: Error?
-
     var body: some View {
         switch status {
         case .loading, .failed:
@@ -277,34 +320,34 @@ private struct NapcatPatchView: View {
         case .original, .custom:
             VStack(alignment: .leading) {
                 HStack {
-                    Text(__designTimeString("#8042_60", fallback: "请备份"))
-                    Button(__designTimeString("#8042_61", fallback: "QQ应用目录"), action: getQQPackage)
-                    Text(__designTimeString("#8042_62", fallback: "下的package.json文件"))
+                    Text(__designTimeString("#3023_75", fallback: "请备份"))
+                    Button(__designTimeString("#3023_76", fallback: "QQ应用目录"), action: getQQPackage)
+                    Text(__designTimeString("#3023_77", fallback: "下的package.json文件"))
                 }
                 HStack {
-                    Text(__designTimeString("#8042_63", fallback: "然后使用此"))
-                    Button(__designTimeString("#8042_64", fallback: "修改的文件")) {
+                    Text(__designTimeString("#3023_78", fallback: "然后使用此"))
+                    Button(__designTimeString("#3023_79", fallback: "修改的文件")) {
                         do {
                             try getPatchedPackage()
                         } catch {
-                            failed = __designTimeBoolean("#8042_65", fallback: true)
+                            failed = __designTimeBoolean("#3023_80", fallback: true)
                             self.error = error
                         }
                     }
-                    Text(__designTimeString("#8042_66", fallback: "覆盖，最后点击刷新"))
+                    Text(__designTimeString("#3023_81", fallback: "覆盖，最后点击刷新"))
                 }
             }
-            .alert(__designTimeString("#8042_67", fallback: "发生错误"), isPresented: $failed, presenting: error) { _ in
-                Button(__designTimeString("#8042_68", fallback: "好")) { failed = __designTimeBoolean("#8042_69", fallback: false) }
+            .alert(__designTimeString("#3023_82", fallback: "发生错误"), isPresented: $failed, presenting: error) { _ in
+                Button(__designTimeString("#3023_83", fallback: "好")) { failed = __designTimeBoolean("#3023_84", fallback: false) }
             } message: { e in
                 Text(e.localizedDescription)
             }
         case .napcat:
             VStack(alignment: .leading) {
-                Text(__designTimeString("#8042_70", fallback: "如果要还原，请将备份的package.json文件放回"))
+                Text(__designTimeString("#3023_85", fallback: "如果要还原，请将备份的package.json文件放回"))
                 HStack {
-                    Button(__designTimeString("#8042_71", fallback: "QQ应用目录"), action: getQQPackage)
-                    Text(__designTimeString("#8042_72", fallback: "，然后点击刷新"))
+                    Button(__designTimeString("#3023_86", fallback: "QQ应用目录"), action: getQQPackage)
+                    Text(__designTimeString("#3023_87", fallback: "，然后点击刷新"))
                 }
             }
         }
@@ -317,10 +360,10 @@ private struct NapcatUsageView: View {
             .textSelection(.enabled)
             .font(.system(.callout, design: .monospaced))
             .padding(.horizontal)
-            .padding(.vertical, __designTimeInteger("#8042_73", fallback: 5))
+            .padding(.vertical, __designTimeInteger("#3023_88", fallback: 5))
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(.selection)
-            .cornerRadius(__designTimeInteger("#8042_74", fallback: 5))
+            .cornerRadius(__designTimeInteger("#3023_89", fallback: 5))
     }
 }
 
