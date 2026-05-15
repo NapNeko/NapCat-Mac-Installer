@@ -1,9 +1,0 @@
-Target dependency graph (4 targets)
-Target 'NapCatInstaller' in project 'NapCatInstaller'
-➜ Explicit dependency on target 'ZIPFoundation' in project 'ZIPFoundation'
-Target 'ZIPFoundation' in project 'ZIPFoundation'
-➜ Explicit dependency on target 'ZIPFoundation' in project 'ZIPFoundation'
-➜ Explicit dependency on target 'ZIPFoundation_ZIPFoundation' in project 'ZIPFoundation'
-Target 'ZIPFoundation' in project 'ZIPFoundation'
-➜ Explicit dependency on target 'ZIPFoundation_ZIPFoundation' in project 'ZIPFoundation'
-Target 'ZIPFoundation_ZIPFoundation' in project 'ZIPFoundation' (no dependencies)
