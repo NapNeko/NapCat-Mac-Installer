@@ -23,7 +23,7 @@ struct ContentView: View {
     }
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(alignment: .center, spacing: 20) {
             HStack {
                 VStack(alignment: .trailing, spacing: 5) {
                     Text("QQ版本")
@@ -57,7 +57,7 @@ struct ContentView: View {
                 .frame(maxWidth: 150)
             }
             if showPatch {
-                NapcatPatchView(status: patchStatus)
+                NapcatPatchView(status: patchStatus, refreshHandler: updatePatchStatus)
             }
             if showUsage {
                 NapcatUsageView()
@@ -73,12 +73,10 @@ struct ContentView: View {
         .animation(.default, value: patchStatus)
         .animation(.default, value: napcatVersion)
         .task(id: buttonClicked) {
-            updateQQVersion()
-            updatePatchStatus()
-            await updateNapcatVersion()
+            updateAll()
         }
     }
-
+    
     private func updateQQVersion() {
         do {
             guard let version = try getQQVersion() else {
@@ -107,6 +105,12 @@ struct ContentView: View {
         } catch {
             napcatVersion = .failed(error.localizedDescription)
         }
+    }
+    
+    private func updateAll() {
+        updateQQVersion()
+        updatePatchStatus()
+        Task { await updateNapcatVersion() }
     }
 
     private func updatePatchStatus() {
@@ -346,54 +350,39 @@ private struct InstallationProgressView: View {
 
 private struct NapcatPatchView: View {
     let status: PatchStatus
+    let refreshHandler: () -> Void
     @State private var failed = false
     @State private var error: Error?
+
     var body: some View {
         switch status {
         case .loading, .failed:
             EmptyView()
         case .original, .custom:
-            VStack(alignment: .leading) {
-//                HStack {
-//                    Text("请备份")
-//                    Button("QQ应用目录", action: getQQPackage)
-//                    Text("下的package.json文件")
-//                }
-//                HStack {
-//                    Text("然后使用此")
-//                    Button("修改的文件") {
-//                        do {
-//                            try getPatchedPackage()
-//                        } catch {
-//                            failed = true
-//                            self.error = error
-//                        }
-//                    }
-//                    Text("覆盖，最后点击刷新")
-//                }
-                Button("一键注入") {
-                    do {
-                        try setQQPackageBak()
-                    } catch {
-                        failed = true
-                        self.error = error
-                    }
-                }
-            }
-            .alert("发生错误", isPresented: $failed, presenting: error) { _ in
-                Button("好") { failed = false }
-            } message: { e in
-                Text(e.localizedDescription)
-            }
+            patchButton(title: "切换程序入口「 NapCat 」", action: setQQPackageBak)
         case .napcat:
-            VStack(alignment: .leading) {
-//                Text("如果要还原，请将备份的package.json文件放回")
-//                HStack {
-//                    Button("QQ应用目录", action: getQQPackage)
-//                    Text("，然后点击刷新")
-//                }
-                Button("一键还原", action: getQQPackageBak)
+            patchButton(title: "切换程序入口「 原版 QQ 」", action: getQQPackageBak)
+        }
+    }
+
+    @ViewBuilder
+    private func patchButton(title: String, action: @escaping () throws -> Void) -> some View {
+        VStack(alignment: .center) {
+            Button(title) {
+                do {
+                    try action()
+                } catch {
+                    failed = true
+                    self.error = error
+                }
+                refreshHandler()
             }
+            Text("需要在“系统设置-隐私与安全性-App管理”中添加该程序！")
+        }
+        .alert("发生错误", isPresented: $failed, presenting: error) { _ in
+            Button("好") { failed = false }
+        } message: { e in
+            Text(e.localizedDescription)
         }
     }
 }

@@ -108,6 +108,7 @@
       }
     },
     "，然后点击刷新" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -172,6 +173,7 @@
       }
     },
     "QQ应用目录" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -191,13 +193,8 @@
         }
       }
     },
-    "一键注入" : {
-
-    },
-    "一键还原" : {
-
-    },
     "下的package.json文件" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -229,6 +226,7 @@
       }
     },
     "修改的文件" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -302,6 +300,7 @@
       }
     },
     "如果要还原，请将备份的package.json文件放回" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -358,6 +357,7 @@
 
     },
     "然后使用此" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -388,6 +388,7 @@
       }
     },
     "覆盖，最后点击刷新" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -408,6 +409,7 @@
       }
     },
     "请备份" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -418,6 +420,9 @@
       }
     },
     "进度: %lld%%" : {
+
+    },
+    "需要在“系统设置-隐私与安全性-App管理”中添加该程序！" : {
 
     }
   },

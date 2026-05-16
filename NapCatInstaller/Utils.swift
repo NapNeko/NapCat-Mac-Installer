@@ -648,7 +648,6 @@ func setQQPackageBak() throws {
     qq["main"] = napcatLoader
     let data = try JSONSerialization.data(withJSONObject: qq, options: [.prettyPrinted, .withoutEscapingSlashes])
     let base64String = data.base64EncodedString()
-    let writeCommand = "echo '\(base64String)' | base64 --decode | sudo -S tee '\(targetPath)' > /dev/null"
     let fullCommand = "echo '\(escapedPassword)' | sudo -S bash -c \"echo '\(base64String)' | base64 --decode > '\(targetPath)'\""
     let writeProcess = Process()
     writeProcess.launchPath = "/bin/sh"
@@ -692,20 +691,6 @@ func setQQPackageBak() throws {
         }
     }
 }
-
-//func getQQPackage() {
-//    NSWorkspace.shared.activateFileViewerSelecting([packageURL])
-//}
-//
-//func getPatchedPackage() throws {
-//    try createLoader()
-//    guard var qq = try getJSONObject(url: packageURL) else { return }
-//    qq["main"] = napcatLoader
-//    let data = try JSONSerialization.data(withJSONObject: qq, options: [.prettyPrinted, .withoutEscapingSlashes])
-//    let url = FileManager.default.temporaryDirectory.appendingPathComponent("package.json")
-//    try data.write(to: url, options: .atomic)
-//    NSWorkspace.shared.activateFileViewerSelecting([url])
-//}
 
 let napcatInstructions = #"""
     # \#(NSLocalizedString("命令行启动，注入 NapCat", comment: ""))
