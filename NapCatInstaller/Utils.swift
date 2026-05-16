@@ -248,7 +248,6 @@ struct GitHubProxy: Identifiable, Hashable {
             ("gh-proxy.com (hk)", "https://hk.gh-proxy.org"),
         ]
         let customProxies = [
-            ("GitHub 原生", "", URLFormat.direct),
             ("@Lufs's", "https://cors.isteed.cc", URLFormat.custom),
             ("raw.ihtw.moe", "https://raw.ihtw.moe", URLFormat.custom),
             ("github.com/xixu-me/Xget", "https://xget.xi-xu.me/gh", URLFormat.custom),
@@ -697,10 +696,9 @@ private let webuiURL = datURL.appendingPathComponent("config/webui.json", isDire
 func getWebUILink() throws -> URL? {
     guard let dict = try getJSONObject(url: webuiURL),
           let port = dict["port"] as? Int,
-          let prefix = dict["prefix"] as? String,
           let token = dict["token"] as? String
     else {
         return nil
     }
-    return URL(string: "http://127.0.0.1:\(port)\(prefix)/webui?token=\(token)")
+    return URL(string: "http://127.0.0.1:\(port)/webui?token=\(token)")
 }

@@ -430,13 +430,8 @@ private struct NapcatUsageView: View {
             launchError = "QQ 可执行文件不存在或不可执行"
             return
         }
-
         let path = executableURL.path
         let escapedPath = path.replacingOccurrences(of: "'", with: "'\\''")
-        
-        // 脚本逻辑：
-        // 1. 如果没有任何窗口，则创建一个新窗口并执行命令。
-        // 2. 如果有窗口，则在前台窗口的当前标签页中执行命令（不新建窗口）。
         let script = """
         tell application "Terminal"
             activate
@@ -449,7 +444,6 @@ private struct NapcatUsageView: View {
             end if
         end tell
         """
-        
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
         process.arguments = ["-e", script]
