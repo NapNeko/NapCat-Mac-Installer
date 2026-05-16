@@ -377,7 +377,9 @@ private struct NapcatPatchView: View {
                 }
                 refreshHandler()
             }
-            Text("需要在“系统设置-隐私与安全性-App管理”中添加该程序！")
+            Text("注意：需要在“系统设置-隐私与安全性-App管理”中添加该程序！")
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
         .alert("发生错误", isPresented: $failed, presenting: error) { _ in
             Button("好") { failed = false }
@@ -388,15 +390,88 @@ private struct NapcatPatchView: View {
 }
 
 private struct NapcatUsageView: View {
+    @State private var launchError: String? = nil
+
     var body: some View {
-        Text(napcatInstructions)
-            .textSelection(.enabled)
-            .font(.system(.callout, design: .monospaced))
-            .padding(.horizontal)
-            .padding(.vertical, 5)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.selection)
-            .cornerRadius(5)
+        VStack(alignment: .center, spacing: 12) {
+            HStack(spacing: 20) {
+                Button("🚀 启动 NapCat") {
+                    launchNapcat()
+                }
+                Button("🐧 启动 原版QQ") {
+                    launchOriginalQQ()
+                }
+            }
+            if let error = launchError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
+            Text("提示：启动原版QQ建议切换程序入口，否则可能会出现问题！")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private func getQQAppURL() -> URL? {
+        let defaultPath = "/Applications/QQ.app"
+        let url = URL(fileURLWithPath: defaultPath)
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return url
+    }
+
+    private func launchNapcat() {
+        guard let qqAppURL = getQQAppURL() else {
+            launchError = "未找到 QQ.app，请确认已安装 QQ"
+            return
+        }
+        let executableURL = qqAppURL.appendingPathComponent("Contents/MacOS/QQ")
+        guard FileManager.default.isExecutableFile(atPath: executableURL.path) else {
+            launchError = "QQ 可执行文件不存在或不可执行"
+            return
+        }
+
+        let path = executableURL.path
+        let escapedPath = path.replacingOccurrences(of: "'", with: "'\\''")
+        
+        // 脚本逻辑：
+        // 1. 如果没有任何窗口，则创建一个新窗口并执行命令。
+        // 2. 如果有窗口，则在前台窗口的当前标签页中执行命令（不新建窗口）。
+        let script = """
+        tell application "Terminal"
+            activate
+            if (count of windows) is 0 then
+                do script "'\(escapedPath)' --no-sandbox"
+            else
+                tell front window
+                    do script "'\(escapedPath)' --no-sandbox" in selected tab
+                end tell
+            end if
+        end tell
+        """
+        
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        process.arguments = ["-e", script]
+        
+        do {
+            try process.run()
+            launchError = nil
+        } catch {
+            launchError = "启动失败: \(error.localizedDescription)"
+        }
+    }
+
+    private func launchOriginalQQ() {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        process.arguments = ["-a", "QQ.app", "-n"]
+        do {
+            try process.run()
+            launchError = nil
+        } catch {
+            launchError = "启动失败: \(error.localizedDescription)"
+        }
     }
 }
 

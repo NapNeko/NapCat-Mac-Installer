@@ -692,15 +692,6 @@ func setQQPackageBak() throws {
     }
 }
 
-let napcatInstructions = #"""
-    # \#(NSLocalizedString("命令行启动，注入 NapCat", comment: ""))
-    $ /Applications/QQ.app/Contents/MacOS/QQ --no-sandbox
-    # \#(NSLocalizedString("参数可以加 -q <QQ号> 快速登录", comment: ""))
-
-    # \#(NSLocalizedString("正常启动 QQ GUI，不注入 NapCat", comment: ""))
-    $ open -a QQ.app -n
-    """#
-
 private let webuiURL = datURL.appendingPathComponent("config/webui.json", isDirectory: false)
 
 func getWebUILink() throws -> URL? {

@@ -118,6 +118,12 @@
         }
       }
     },
+    "🐧 启动 原版QQ" : {
+
+    },
+    "🚀 启动 NapCat" : {
+
+    },
     "gh-proxy" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -260,6 +266,7 @@
       }
     },
     "参数可以加 -q <QQ号> 快速登录" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -280,6 +287,7 @@
       }
     },
     "命令行启动，注入 NapCat" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -333,6 +341,9 @@
         }
       }
     },
+    "提示：启动原版QQ建议切换程序入口，否则可能会出现问题！" : {
+
+    },
     "更新" : {
       "localizations" : {
         "en" : {
@@ -344,6 +355,7 @@
       }
     },
     "正常启动 QQ GUI，不注入 NapCat" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -352,6 +364,9 @@
           }
         }
       }
+    },
+    "注意：需要在“系统设置-隐私与安全性-App管理”中添加该程序！" : {
+
     },
     "清除" : {
 
@@ -420,9 +435,6 @@
       }
     },
     "进度: %lld%%" : {
-
-    },
-    "需要在“系统设置-隐私与安全性-App管理”中添加该程序！" : {
 
     }
   },
