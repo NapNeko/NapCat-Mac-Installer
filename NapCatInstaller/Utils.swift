@@ -481,19 +481,231 @@ private func createLoader() throws {
     try loaderContent.write(to: loaderURL, atomically: true, encoding: .utf8)
 }
 
-func getQQPackage() {
-    NSWorkspace.shared.activateFileViewerSelecting([packageURL])
+func getQQPackageBak() {
+    let packageURL = packageURL
+    let backupURL = URL(fileURLWithPath: packageURL.path + ".bak")
+    guard FileManager.default.fileExists(atPath: backupURL.path) else {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "错误"
+            alert.informativeText = "未找到备份文件：\n\(backupURL.path)"
+            alert.alertStyle = .critical
+            alert.addButton(withTitle: "确定")
+            alert.runModal()
+        }
+        return
+    }
+    let alert = NSAlert()
+    alert.messageText = "需要管理员权限"
+    alert.informativeText = "请输入您的电脑开机密码（用于恢复 QQ 配置文件）："
+    alert.alertStyle = .informational
+    alert.addButton(withTitle: "确定")
+    alert.addButton(withTitle: "取消")
+    let textField = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+    textField.placeholderString = "密码"
+    alert.accessoryView = textField
+    let response = alert.runModal()
+    guard response == .alertFirstButtonReturn else {
+        return
+    }
+    let password = textField.stringValue
+    guard !password.isEmpty else {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "提示"
+            alert.informativeText = "未输入密码，操作已取消。"
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "确定")
+            alert.runModal()
+        }
+        return
+    }
+    let targetPath = packageURL.path
+    let backupPath = backupURL.path
+    let escapedPassword = password.replacingOccurrences(of: "'", with: "'\\''")
+    let command = "echo '\(escapedPassword)' | sudo -S cp '\(backupPath)' '\(targetPath)'"
+    let process = Process()
+    process.launchPath = "/bin/sh"
+    process.arguments = ["-c", command]
+    let outputPipe = Pipe()
+    let errorPipe = Pipe()
+    process.standardOutput = outputPipe
+    process.standardError = errorPipe
+    do {
+        try process.run()
+        process.waitUntilExit()
+        let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
+        let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
+        let output = String(data: outputData, encoding: .utf8) ?? ""
+        let errorOutput = String(data: errorData, encoding: .utf8) ?? ""
+        DispatchQueue.main.async {
+            if process.terminationStatus == 0 {
+                let alert = NSAlert()
+                alert.messageText = "成功"
+                alert.informativeText = "package.json 已恢复为备份文件"
+                alert.alertStyle = .informational
+                alert.addButton(withTitle: "确定")
+                alert.runModal()
+            } else {
+                let msg = errorOutput.isEmpty ? output : errorOutput
+                let alert = NSAlert()
+                alert.messageText = "恢复失败"
+                alert.informativeText = "命令执行失败：\n\(msg)"
+                alert.alertStyle = .warning
+                alert.addButton(withTitle: "确定")
+                alert.runModal()
+            }
+        }
+    } catch {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "执行错误"
+            alert.informativeText = error.localizedDescription
+            alert.alertStyle = .critical
+            alert.addButton(withTitle: "确定")
+            alert.runModal()
+        }
+    }
 }
 
-func getPatchedPackage() throws {
+func setQQPackageBak() throws {
+    let targetURL = packageURL
+    let backupURL = URL(fileURLWithPath: targetURL.path + ".bak")
+    guard FileManager.default.fileExists(atPath: targetURL.path) else {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "错误"
+            alert.informativeText = "未找到原始文件：\n\(targetURL.path)"
+            alert.alertStyle = .critical
+            alert.addButton(withTitle: "确定")
+            alert.runModal()
+        }
+        return
+    }
+    let alert = NSAlert()
+    alert.messageText = "需要管理员权限"
+    alert.informativeText = "请输入您的电脑开机密码（用于备份并修改 QQ 配置文件）："
+    alert.alertStyle = .informational
+    alert.addButton(withTitle: "确定")
+    alert.addButton(withTitle: "取消")
+    let textField = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+    textField.placeholderString = "密码"
+    alert.accessoryView = textField
+    let response = alert.runModal()
+    guard response == .alertFirstButtonReturn else {
+        return
+    }
+    let password = textField.stringValue
+    guard !password.isEmpty else {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "提示"
+            alert.informativeText = "未输入密码，操作已取消。"
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "确定")
+            alert.runModal()
+        }
+        return
+    }
+    let escapedPassword = password.replacingOccurrences(of: "'", with: "'\\''")
+    let targetPath = targetURL.path
+    let backupPath = backupURL.path
+    let backupCommand = "echo '\(escapedPassword)' | sudo -S cp '\(targetPath)' '\(backupPath)'"
+    let backupProcess = Process()
+    backupProcess.launchPath = "/bin/sh"
+    backupProcess.arguments = ["-c", backupCommand]
+    backupProcess.standardOutput = Pipe()
+    backupProcess.standardError = Pipe()
+    do {
+        try backupProcess.run()
+        backupProcess.waitUntilExit()
+    } catch {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "备份错误"
+            alert.informativeText = "无法执行备份命令：\(error.localizedDescription)"
+            alert.alertStyle = .critical
+            alert.addButton(withTitle: "确定")
+            alert.runModal()
+        }
+        return
+    }
+    guard backupProcess.terminationStatus == 0 else {
+        let errorData = (backupProcess.standardError as? Pipe)?.fileHandleForReading.readDataToEndOfFile() ?? Data()
+        let errorMsg = String(data: errorData, encoding: .utf8) ?? "未知错误"
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "备份失败"
+            alert.informativeText = "备份原文件失败：\n\(errorMsg)"
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "确定")
+            alert.runModal()
+        }
+        return
+    }
     try createLoader()
     guard var qq = try getJSONObject(url: packageURL) else { return }
     qq["main"] = napcatLoader
     let data = try JSONSerialization.data(withJSONObject: qq, options: [.prettyPrinted, .withoutEscapingSlashes])
-    let url = FileManager.default.temporaryDirectory.appendingPathComponent("package.json")
-    try data.write(to: url, options: .atomic)
-    NSWorkspace.shared.activateFileViewerSelecting([url])
+    let base64String = data.base64EncodedString()
+    let writeCommand = "echo '\(base64String)' | base64 --decode | sudo -S tee '\(targetPath)' > /dev/null"
+    let fullCommand = "echo '\(escapedPassword)' | sudo -S bash -c \"echo '\(base64String)' | base64 --decode > '\(targetPath)'\""
+    let writeProcess = Process()
+    writeProcess.launchPath = "/bin/sh"
+    writeProcess.arguments = ["-c", fullCommand]
+    writeProcess.standardOutput = Pipe()
+    writeProcess.standardError = Pipe()
+    do {
+        try writeProcess.run()
+        writeProcess.waitUntilExit()
+    } catch {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "写入错误"
+            alert.informativeText = "无法执行写入命令：\(error.localizedDescription)"
+            alert.alertStyle = .critical
+            alert.addButton(withTitle: "确定")
+            alert.runModal()
+        }
+        return
+    }
+    let outputData = (writeProcess.standardOutput as? Pipe)?.fileHandleForReading.readDataToEndOfFile() ?? Data()
+    let errorData = (writeProcess.standardError as? Pipe)?.fileHandleForReading.readDataToEndOfFile() ?? Data()
+    let output = String(data: outputData, encoding: .utf8) ?? ""
+    let errorOutput = String(data: errorData, encoding: .utf8) ?? ""
+    DispatchQueue.main.async {
+        if writeProcess.terminationStatus == 0 {
+            let alert = NSAlert()
+            alert.messageText = "成功"
+            alert.informativeText = "已备份原文件并直接写入修改后的 package.json"
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "确定")
+            alert.runModal()
+        } else {
+            let msg = errorOutput.isEmpty ? output : errorOutput
+            let alert = NSAlert()
+            alert.messageText = "写入失败"
+            alert.informativeText = "写入新内容失败：\n\(msg)"
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "确定")
+            alert.runModal()
+        }
+    }
 }
+
+//func getQQPackage() {
+//    NSWorkspace.shared.activateFileViewerSelecting([packageURL])
+//}
+//
+//func getPatchedPackage() throws {
+//    try createLoader()
+//    guard var qq = try getJSONObject(url: packageURL) else { return }
+//    qq["main"] = napcatLoader
+//    let data = try JSONSerialization.data(withJSONObject: qq, options: [.prettyPrinted, .withoutEscapingSlashes])
+//    let url = FileManager.default.temporaryDirectory.appendingPathComponent("package.json")
+//    try data.write(to: url, options: .atomic)
+//    NSWorkspace.shared.activateFileViewerSelecting([url])
+//}
 
 let napcatInstructions = #"""
     # \#(NSLocalizedString("命令行启动，注入 NapCat", comment: ""))

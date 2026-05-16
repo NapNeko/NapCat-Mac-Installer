@@ -354,22 +354,30 @@ private struct NapcatPatchView: View {
             EmptyView()
         case .original, .custom:
             VStack(alignment: .leading) {
-                HStack {
-                    Text("请备份")
-                    Button("QQ应用目录", action: getQQPackage)
-                    Text("下的package.json文件")
-                }
-                HStack {
-                    Text("然后使用此")
-                    Button("修改的文件") {
-                        do {
-                            try getPatchedPackage()
-                        } catch {
-                            failed = true
-                            self.error = error
-                        }
+//                HStack {
+//                    Text("请备份")
+//                    Button("QQ应用目录", action: getQQPackage)
+//                    Text("下的package.json文件")
+//                }
+//                HStack {
+//                    Text("然后使用此")
+//                    Button("修改的文件") {
+//                        do {
+//                            try getPatchedPackage()
+//                        } catch {
+//                            failed = true
+//                            self.error = error
+//                        }
+//                    }
+//                    Text("覆盖，最后点击刷新")
+//                }
+                Button("一键注入") {
+                    do {
+                        try setQQPackageBak()
+                    } catch {
+                        failed = true
+                        self.error = error
                     }
-                    Text("覆盖，最后点击刷新")
                 }
             }
             .alert("发生错误", isPresented: $failed, presenting: error) { _ in
@@ -379,11 +387,12 @@ private struct NapcatPatchView: View {
             }
         case .napcat:
             VStack(alignment: .leading) {
-                Text("如果要还原，请将备份的package.json文件放回")
-                HStack {
-                    Button("QQ应用目录", action: getQQPackage)
-                    Text("，然后点击刷新")
-                }
+//                Text("如果要还原，请将备份的package.json文件放回")
+//                HStack {
+//                    Button("QQ应用目录", action: getQQPackage)
+//                    Text("，然后点击刷新")
+//                }
+                Button("一键还原", action: getQQPackageBak)
             }
         }
     }
