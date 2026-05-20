@@ -11,7 +11,8 @@
 .LSOverride
 
 # Icon must end with two \r
-Icon
+Icon
+
 
 # Thumbnails
 ._*
@@ -39,6 +40,7 @@ Temporary Items
 ### Xcode ###
 ## User settings
 xcuserdata/
+Build/
 
 ## Xcode 8 and earlier
 *.xcscmblueprint

@@ -1,20 +1,18 @@
-//
-//  ContentView.swift
-//  NapCatInstaller
-//
-//  Created by hguandl on 2024/10/1.
-//
-
 import SwiftUI
 
 struct ContentView: View {
-    @AppStorage("GitHubProxy") private var proxy: GitHubProxy?
-
+    @AppStorage("GitHubProxyIndex") private var proxyIndex: Int = -1
     @State private var qqVersion = QQVersion.loading
     @State private var patchStatus = PatchStatus.loading
     @State private var napcatVersion = NapcatVersion.loading
-
     @State private var buttonClicked = false
+    
+    private var proxy: GitHubProxy? {
+        if proxyIndex < 0 || proxyIndex >= GitHubProxy.allProxies.count {
+            return nil
+        }
+        return GitHubProxy.allProxies[proxyIndex]
+    }
 
     private var showPatch: Bool {
         return napcatVersion.installed || patchStatus.patched
@@ -25,14 +23,13 @@ struct ContentView: View {
     }
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(alignment: .center, spacing: 20) {
             HStack {
                 VStack(alignment: .trailing, spacing: 5) {
                     Text("QQ版本")
                     Text("NapCat版本")
                     Text("程序入口")
                 }
-
                 VStack(alignment: .leading, spacing: 5) {
                     QQVersionView(version: qqVersion)
                     NapcatVersionView(version: napcatVersion)
@@ -50,18 +47,17 @@ struct ContentView: View {
                 NapcatInstallationButton(version: napcatVersion, status: patchStatus, proxy: proxy) {
                     buttonClicked.toggle()
                 }
-                Picker("代理", selection: $proxy) {
-                    Text("自动检测").tag(GitHubProxy?.none)
-                    Text("不使用").tag(GitHubProxy.direct)
-                    Text("moeyy").tag(GitHubProxy.moeyy)
-                    Text("ghproxy").tag(GitHubProxy.ghproxy)
-                    Text("gh-proxy").tag(GitHubProxy.ghProxy)
-                    Text("haod").tag(GitHubProxy.haod)
+                Picker("代理", selection: $proxyIndex) {
+                    Text("自动检测").tag(-1)
+                    ForEach(Array(GitHubProxy.allProxies.enumerated()), id: \.offset) { index, proxyItem in
+                        Text(proxyItem.name)
+                            .tag(index)
+                    }
                 }
                 .frame(maxWidth: 150)
             }
             if showPatch {
-                NapcatPatchView(status: patchStatus)
+                NapcatPatchView(status: patchStatus, refreshHandler: updatePatchStatus)
             }
             if showUsage {
                 NapcatUsageView()
@@ -77,12 +73,10 @@ struct ContentView: View {
         .animation(.default, value: patchStatus)
         .animation(.default, value: napcatVersion)
         .task(id: buttonClicked) {
-            updateQQVersion()
-            updatePatchStatus()
-            await updateNapcatVersion()
+            updateAll()
         }
     }
-
+    
     private func updateQQVersion() {
         do {
             guard let version = try getQQVersion() else {
@@ -112,6 +106,12 @@ struct ContentView: View {
             napcatVersion = .failed(error.localizedDescription)
         }
     }
+    
+    private func updateAll() {
+        updateQQVersion()
+        updatePatchStatus()
+        Task { await updateNapcatVersion() }
+    }
 
     private func updatePatchStatus() {
         do {
@@ -135,7 +135,6 @@ struct ContentView: View {
 
 private struct QQVersionView: View {
     let version: QQVersion
-
     var body: some View {
         switch version {
         case .loading:
@@ -152,7 +151,6 @@ private struct QQVersionView: View {
 
 private struct NapcatVersionView: View {
     let version: NapcatVersion
-
     var body: some View {
         switch version {
         case .loading:
@@ -171,7 +169,6 @@ private struct NapcatVersionView: View {
 
 private struct PatchStatusView: View {
     let status: PatchStatus
-
     var body: some View {
         switch status {
         case .loading:
@@ -193,11 +190,11 @@ private struct NapcatInstallationButton: View {
     let status: PatchStatus
     let proxy: GitHubProxy?
     let refreshHandler: () -> Void
-
     @State private var loading = false
+    @State private var showLogs = false
     @State private var failed = false
     @State private var error: Error?
-
+    @StateObject private var installationProgress = InstallationProgress()
     var body: some View {
         switch version {
         case .loading, .failed:
@@ -208,35 +205,76 @@ private struct NapcatInstallationButton: View {
             }
             .disabled(true)
         case .missing, .outdated:
-            Button {
-                Task {
-                    loading = true
-                    do {
-                        try await installNapcat(proxy: proxy)
-                    } catch {
-                        failed = true
-                        self.error = error
+            VStack(alignment: .leading, spacing: 8) {
+                Button {
+                    Task {
+                        loading = true
+                        showLogs = true
+                        installationProgress.reset()
+                        installationProgress.isInstalling = true
+                        do {
+                            try await installNapcat(proxy: proxy, progress: installationProgress)
+                        } catch {
+                            failed = true
+                            self.error = error
+                        }
+                        installationProgress.isInstalling = false
+                        loading = false
+                        refreshHandler()
                     }
-                    loading = false
-                    refreshHandler()
+                } label: {
+                    switch version {
+                    case .missing:
+                        Label("安装", systemImage: "shippingbox.circle")
+                    case .outdated:
+                        Label("更新", systemImage: "arrow.up.circle")
+                    default:
+                        fatalError("Should not be reachable")
+                    }
                 }
-            } label: {
-                switch version {
-                case .missing:
-                    Label("安装", systemImage: "shippingbox.circle")
-                case .outdated:
-                    Label("更新", systemImage: "arrow.up.circle")
-                default:
-                    fatalError("Should not be reachable")
+                .alert("发生错误", isPresented: $failed, presenting: error) { _ in
+                    Button("好") { failed = false }
+                } message: { e in
+                    Text(e.localizedDescription)
                 }
-            }
-            .sheet(isPresented: $loading) {
-                ProgressView()
-            }
-            .alert("发生错误", isPresented: $failed, presenting: error) { _ in
-                Button("好") { failed = false }
-            } message: { e in
-                Text(e.localizedDescription)
+                if showLogs {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            ProgressView(value: installationProgress.progress) {
+                                Text("进度: \(Int(installationProgress.progress * 100))%")
+                            }
+                            .progressViewStyle(.linear)
+                            Button("清除") {
+                                showLogs = false
+                                installationProgress.reset()
+                            }
+                            .disabled(installationProgress.isInstalling)
+                        }
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 4) {
+                                ForEach(installationProgress.logs) { log in
+                                    HStack(alignment: .top, spacing: 8) {
+                                        Text(log.timestamp, style: .time)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                            .frame(width: 60, alignment: .leading)
+                                        Text(log.message)
+                                            .font(.system(.caption, design: .monospaced))
+                                            .textSelection(.enabled)
+                                        Spacer()
+                                    }
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .font(.system(.callout, design: .monospaced))
+                        .padding(.horizontal)
+                        .padding(.vertical, 5)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(.selection)
+                        .cornerRadius(5)
+                    }
+                }
             }
         case .latest:
             Button {
@@ -261,9 +299,58 @@ private struct NapcatInstallationButton: View {
     }
 }
 
+private struct InstallationProgressView: View {
+    let progress: InstallationProgress
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("安装进度")
+                .font(.headline)
+            ProgressView(value: progress.progress) {
+                Text("进度: \(Int(progress.progress * 100))%")
+            }
+            .progressViewStyle(.linear)
+            .frame(width: 400)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(progress.logs) { log in
+                        HStack(alignment: .top, spacing: 8) {
+                            Text(log.timestamp, style: .time)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .frame(width: 60, alignment: .leading)
+                            Text(log.message)
+                                .font(.system(.caption, design: .monospaced))
+                                .textSelection(.enabled)
+                            Spacer()
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .font(.system(.callout, design: .monospaced))
+            .padding(.horizontal)
+            .padding(.vertical, 5)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.selection)
+            .cornerRadius(5)
+            HStack {
+                Spacer()
+                Button("关闭") {
+                    if !progress.isInstalling {
+                        progress.reset()
+                    }
+                }
+                .disabled(progress.isInstalling)
+            }
+        }
+        .padding()
+        .frame(width: 500)
+    }
+}
+
 private struct NapcatPatchView: View {
     let status: PatchStatus
-
+    let refreshHandler: () -> Void
     @State private var failed = false
     @State private var error: Error?
 
@@ -272,52 +359,113 @@ private struct NapcatPatchView: View {
         case .loading, .failed:
             EmptyView()
         case .original, .custom:
-            VStack(alignment: .leading) {
-                HStack {
-                    Text("请备份")
-                    Button("QQ应用目录", action: getQQPackage)
-                    Text("下的package.json文件")
-                }
-                HStack {
-                    Text("然后使用此")
-                    Button("修改的文件") {
-                        do {
-                            try getPatchedPackage()
-                        } catch {
-                            failed = true
-                            self.error = error
-                        }
-                    }
-                    Text("覆盖，最后点击刷新")
-                }
-            }
-            .alert("发生错误", isPresented: $failed, presenting: error) { _ in
-                Button("好") { failed = false }
-            } message: { e in
-                Text(e.localizedDescription)
-            }
+            patchButton(title: "切换程序入口「 NapCat 」", action: setQQPackageBak)
         case .napcat:
-            VStack(alignment: .leading) {
-                Text("如果要还原，请将备份的package.json文件放回")
-                HStack {
-                    Button("QQ应用目录", action: getQQPackage)
-                    Text("，然后点击刷新")
+            patchButton(title: "切换程序入口「 原版 QQ 」", action: getQQPackageBak)
+        }
+    }
+
+    @ViewBuilder
+    private func patchButton(title: String, action: @escaping () throws -> Void) -> some View {
+        VStack(alignment: .center) {
+            Button(title) {
+                do {
+                    try action()
+                } catch {
+                    failed = true
+                    self.error = error
                 }
+                refreshHandler()
             }
+            Text("注意：需要在“系统设置-隐私与安全性-App管理”中添加该程序！")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .alert("发生错误", isPresented: $failed, presenting: error) { _ in
+            Button("好") { failed = false }
+        } message: { e in
+            Text(e.localizedDescription)
         }
     }
 }
 
 private struct NapcatUsageView: View {
+    @State private var launchError: String? = nil
+
     var body: some View {
-        Text(napcatInstructions)
-            .textSelection(.enabled)
-            .font(.system(.callout, design: .monospaced))
-            .padding(.horizontal)
-            .padding(.vertical, 5)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.selection)
-            .cornerRadius(5)
+        VStack(alignment: .center, spacing: 12) {
+            HStack(spacing: 20) {
+                Button("🚀 启动 NapCat") {
+                    launchNapcat()
+                }
+                Button("🐧 启动 原版QQ") {
+                    launchOriginalQQ()
+                }
+            }
+            if let error = launchError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
+            Text("提示：启动原版QQ建议切换程序入口，否则可能会出现问题！")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private func getQQAppURL() -> URL? {
+        let defaultPath = "/Applications/QQ.app"
+        let url = URL(fileURLWithPath: defaultPath)
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return url
+    }
+
+    private func launchNapcat() {
+        guard let qqAppURL = getQQAppURL() else {
+            launchError = "未找到 QQ.app，请确认已安装 QQ"
+            return
+        }
+        let executableURL = qqAppURL.appendingPathComponent("Contents/MacOS/QQ")
+        guard FileManager.default.isExecutableFile(atPath: executableURL.path) else {
+            launchError = "QQ 可执行文件不存在或不可执行"
+            return
+        }
+        let path = executableURL.path
+        let escapedPath = path.replacingOccurrences(of: "'", with: "'\\''")
+        let script = """
+        tell application "Terminal"
+            activate
+            if (count of windows) is 0 then
+                do script "'\(escapedPath)' --no-sandbox"
+            else
+                tell front window
+                    do script "'\(escapedPath)' --no-sandbox" in selected tab
+                end tell
+            end if
+        end tell
+        """
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        process.arguments = ["-e", script]
+        
+        do {
+            try process.run()
+            launchError = nil
+        } catch {
+            launchError = "启动失败: \(error.localizedDescription)"
+        }
+    }
+
+    private func launchOriginalQQ() {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        process.arguments = ["-a", "QQ.app", "-n"]
+        do {
+            try process.run()
+            launchError = nil
+        } catch {
+            launchError = "启动失败: \(error.localizedDescription)"
+        }
     }
 }
 
