@@ -207,7 +207,7 @@ private struct NapcatInstallationButton: View {
         case .missing, .outdated:
             VStack(alignment: .leading, spacing: 8) {
                 Button {
-                    Task {
+                    Task { @MainActor in
                         loading = true
                         showLogs = true
                         installationProgress.reset()

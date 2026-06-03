@@ -25,8 +25,7 @@ NapCat macOS 一键安装器
 
 - **框架**: SwiftUI
 - **依赖**: ZIPFoundation
-- **网络**: 支持 HTTP/HTTPS 代理，自动绕过 SSL 证书验证
-- **安全**: 支持各种代理服务器
+- **网络**: 使用系统默认 TLS 证书校验，支持 40+ GitHub 代理镜像
 
 ## 项目结构
 
@@ -36,35 +35,24 @@ NapCatInstaller/
 ├── ContentView.swift           # 主界面
 ├── Utils.swift                 # 核心功能
 ├── Localizable.xcstrings       # 本地化字符串
-└── Info.plist                  # 应用配置
+├── Info.plist                  # 应用配置
+└── NapCatInstaller.entitlements # 沙箱授权
 ```
+
+## TODO
+
+- [x] **移除 TLS 证书绕过** - 删除自定义 URLSessionDelegate 中无条件信任所有证书的逻辑，使用系统默认 TLS 校验
+- [x] **修复密码泄露风险** - `getQQPackageBak` / `setQQPackageBak` 中不再通过 shell 命令行传递密码，改为 `Process.standardInput` 管道直接写入 `sudo -S`；密码不再出现在进程参数 / 日志中
+- [x] **消除 shell 注入** - 所有 sudo 操作改用 `Process` + 分离参数列表（`["sudo", "-S", "cp", src, dst]`），不再拼接 shell 命令字符串
+- [x] **修复自引用编译错误** - `getQQPackageBak()` 中 `let packageURL = packageURL` 导致的遮蔽问题
+- [x] **修复 `newVersion` 为 nil 时崩溃** - `getRemoteNapcat()` 返回 nil 时不再写入 `Optional` 到 JSON
+- [x] **修复 `reset()` 后台线程问题** - `InstallationProgress.reset()` 切到主线程更新 `@Published` 属性
+- [x] **修复 Task 线程安全** - ContentView 中安装按钮的 `Task` 添加 `@MainActor` 确保所有 UI 状态在主线程更新
+- [x] **补全 Entitlements** - 添加 Hardened Runtime 必需授权（`disable-library-validation`、`allow-unsigned-executable-memory`、`allow-dyld-environment-variables`）
+- [x] **移除 `NSAllowsArbitraryLoads`** - 不再全局禁用 ATS，仅通过 HTTPS 连接
+- [x] **弃用 API 迁移** - `launchPath` 替换为 `executableURL`
+- [ ] **下载完整性校验** - 从 GitHub Releases API 获取 NapCat.Shell.zip 的 SHA-256 digest，下载后验证文件完整性，防止代理投毒
 
 ## 相关链接
 
 - [NapCatQQ](https://github.com/NapNeko/NapCatQQ) - NapCat 官方仓库
-
-## 许可证
-
-```
-MIT License
-
-Copyright (c) 2024 NapNeko
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```

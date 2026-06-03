@@ -27,9 +27,11 @@ class InstallationProgress: ObservableObject {
     }
     
     func reset() {
-        logs = []
-        progress = 0.0
-        isInstalling = false
+        DispatchQueue.main.async {
+            self.logs = []
+            self.progress = 0.0
+            self.isInstalling = false
+        }
     }
 }
 
@@ -80,31 +82,6 @@ class DownloadDelegate: NSObject, URLSessionDownloadDelegate, URLSessionDelegate
         }
     }
     
-    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
-        if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust {
-            if let serverTrust = challenge.protectionSpace.serverTrust {
-                completionHandler(.useCredential, URLCredential(trust: serverTrust))
-            } else {
-                completionHandler(.performDefaultHandling, nil)
-            }
-        } else {
-            completionHandler(.performDefaultHandling, nil)
-        }
-    }
-}
-
-class SpeedTestDelegate: NSObject, URLSessionDelegate {
-    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
-        if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust {
-            if let serverTrust = challenge.protectionSpace.serverTrust {
-                completionHandler(.useCredential, URLCredential(trust: serverTrust))
-            } else {
-                completionHandler(.performDefaultHandling, nil)
-            }
-        } else {
-            completionHandler(.performDefaultHandling, nil)
-        }
-    }
 }
 
 let appURL = URL(fileURLWithPath: "/Applications/QQ.app/Contents/Resources/app")
@@ -264,7 +241,6 @@ struct GitHubProxy: Identifiable, Hashable {
     
     static func auto(progress: InstallationProgress? = nil) async throws -> GitHubProxy {
         let check = "https://github.com/NapNeko/NapCatQQ/releases/latest/download/NapCat.Shell.zip"
-        let delegate = SpeedTestDelegate()
         progress?.addLog("开始测速所有代理...")
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 3.0
@@ -274,7 +250,7 @@ struct GitHubProxy: Identifiable, Hashable {
         return await withThrowingTaskGroup(of: (GitHubProxy, TimeInterval).self) { group in
             for proxy in allProxies where !proxy.baseURL.isEmpty {
                 group.addTask {
-                    let session = URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
+                    let session = URLSession(configuration: config)
                     let start = Date()
                     var request = URLRequest(url: proxy.url(for: check))
                     request.setValue("bytes=0-1", forHTTPHeaderField: "Range")
@@ -404,6 +380,11 @@ func installNapcat(proxy: GitHubProxy? = nil, progress: InstallationProgress? = 
     }
     downloadProgress.updateProgress(0.95)
     downloadProgress.addLog("解压完成")
+    guard fileManager.fileExists(atPath: napcatURL.appendingPathComponent("napcat.mjs").path) else {
+        downloadProgress.addLog("错误: 解压目录中缺少 napcat.mjs，文件可能已损坏或被篡改")
+        try? fileManager.removeItem(at: downloadLocation)
+        throw NSError(domain: "InstallError", code: 3, userInfo: [NSLocalizedDescriptionKey: "napcat.mjs not found after extraction"])
+    }
     let packageJsonURL = napcatURL.appendingPathComponent("package.json")
     do {
         guard fileManager.fileExists(atPath: packageJsonURL.path) else {
@@ -416,11 +397,14 @@ func installNapcat(proxy: GitHubProxy? = nil, progress: InstallationProgress? = 
             downloadProgress.addLog("错误: package.json 格式无效")
             throw NSError(domain: "InstallError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid JSON"])
         }
-        let newVersion = try await getRemoteNapcat()
-        jsonObject?["version"] = newVersion
+        if let newVersion = try await getRemoteNapcat() {
+            jsonObject?["version"] = newVersion
+            downloadProgress.addLog("已修改 version 为: \(newVersion)")
+        } else {
+            downloadProgress.addLog("未获取到远程 version，保留原有版本")
+        }
         let newJsonData = try JSONSerialization.data(withJSONObject: jsonObject!, options: .prettyPrinted)
         try newJsonData.write(to: packageJsonURL)
-        downloadProgress.addLog("已修改 version 为: \(String(describing: newVersion))")
     } catch {
         downloadProgress.addLog("修改 version 失败: \(error.localizedDescription)")
         throw error
@@ -481,7 +465,6 @@ private func createLoader() throws {
 }
 
 func getQQPackageBak() {
-    let packageURL = packageURL
     let backupURL = URL(fileURLWithPath: packageURL.path + ".bak")
     guard FileManager.default.fileExists(atPath: backupURL.path) else {
         DispatchQueue.main.async {
@@ -519,13 +502,13 @@ func getQQPackageBak() {
         }
         return
     }
-    let targetPath = packageURL.path
-    let backupPath = backupURL.path
-    let escapedPassword = password.replacingOccurrences(of: "'", with: "'\\''")
-    let command = "echo '\(escapedPassword)' | sudo -S cp '\(backupPath)' '\(targetPath)'"
     let process = Process()
-    process.launchPath = "/bin/sh"
-    process.arguments = ["-c", command]
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
+    process.arguments = ["-S", "cp", backupURL.path, packageURL.path]
+    let inputPipe = Pipe()
+    inputPipe.fileHandleForWriting.write((password + "\n").data(using: .utf8)!)
+    inputPipe.fileHandleForWriting.closeFile()
+    process.standardInput = inputPipe
     let outputPipe = Pipe()
     let errorPipe = Pipe()
     process.standardOutput = outputPipe
@@ -568,13 +551,11 @@ func getQQPackageBak() {
 }
 
 func setQQPackageBak() throws {
-    let targetURL = packageURL
-    let backupURL = URL(fileURLWithPath: targetURL.path + ".bak")
-    guard FileManager.default.fileExists(atPath: targetURL.path) else {
+    guard FileManager.default.fileExists(atPath: packageURL.path) else {
         DispatchQueue.main.async {
             let alert = NSAlert()
             alert.messageText = "错误"
-            alert.informativeText = "未找到原始文件：\n\(targetURL.path)"
+            alert.informativeText = "未找到原始文件：\n\(packageURL.path)"
             alert.alertStyle = .critical
             alert.addButton(withTitle: "确定")
             alert.runModal()
@@ -606,13 +587,14 @@ func setQQPackageBak() throws {
         }
         return
     }
-    let escapedPassword = password.replacingOccurrences(of: "'", with: "'\\''")
-    let targetPath = targetURL.path
-    let backupPath = backupURL.path
-    let backupCommand = "echo '\(escapedPassword)' | sudo -S cp '\(targetPath)' '\(backupPath)'"
+    let backupURL = URL(fileURLWithPath: packageURL.path + ".bak")
     let backupProcess = Process()
-    backupProcess.launchPath = "/bin/sh"
-    backupProcess.arguments = ["-c", backupCommand]
+    backupProcess.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
+    backupProcess.arguments = ["-S", "cp", packageURL.path, backupURL.path]
+    let backupInputPipe = Pipe()
+    backupInputPipe.fileHandleForWriting.write((password + "\n").data(using: .utf8)!)
+    backupInputPipe.fileHandleForWriting.closeFile()
+    backupProcess.standardInput = backupInputPipe
     backupProcess.standardOutput = Pipe()
     backupProcess.standardError = Pipe()
     do {
@@ -646,11 +628,17 @@ func setQQPackageBak() throws {
     guard var qq = try getJSONObject(url: packageURL) else { return }
     qq["main"] = napcatLoader
     let data = try JSONSerialization.data(withJSONObject: qq, options: [.prettyPrinted, .withoutEscapingSlashes])
-    let base64String = data.base64EncodedString()
-    let fullCommand = "echo '\(escapedPassword)' | sudo -S bash -c \"echo '\(base64String)' | base64 --decode > '\(targetPath)'\""
+    let tempDir = FileManager.default.temporaryDirectory
+    let tempFile = tempDir.appendingPathComponent("napcat_package.json")
+    try data.write(to: tempFile)
+    defer { try? FileManager.default.removeItem(at: tempFile) }
     let writeProcess = Process()
-    writeProcess.launchPath = "/bin/sh"
-    writeProcess.arguments = ["-c", fullCommand]
+    writeProcess.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
+    writeProcess.arguments = ["-S", "cp", tempFile.path, packageURL.path]
+    let writeInputPipe = Pipe()
+    writeInputPipe.fileHandleForWriting.write((password + "\n").data(using: .utf8)!)
+    writeInputPipe.fileHandleForWriting.closeFile()
+    writeProcess.standardInput = writeInputPipe
     writeProcess.standardOutput = Pipe()
     writeProcess.standardError = Pipe()
     do {
