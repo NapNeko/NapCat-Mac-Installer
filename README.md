@@ -37,8 +37,6 @@ NapCatInstaller/
 ├── Localizable.xcstrings       # 本地化字符串
 ├── Info.plist                  # 应用配置
 └── NapCatInstaller.entitlements # 沙箱授权
-assets/
-└── zip-box-icon.svg            # ZIPFoundation 徽章图标
 ```
 
 ## 技术原理
