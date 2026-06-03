@@ -62,12 +62,13 @@ struct ContentView: View {
             if showUsage {
                 NapcatUsageView()
             }
-            if let url = try? getWebUILink() {
+            if patchStatus.patched, let url = try? getWebUILink() {
                 Button("打开WebUI…") {
                     NSWorkspace.shared.open(url)
                 }
             }
         }
+        .frame(maxWidth: .infinity)
         .padding()
         .animation(.default, value: qqVersion)
         .animation(.default, value: patchStatus)
@@ -193,158 +194,119 @@ private struct NapcatInstallationButton: View {
     @State private var loading = false
     @State private var showLogs = false
     @State private var failed = false
+    @State private var showSuccessAlert = false
     @State private var error: Error?
     @StateObject private var installationProgress = InstallationProgress()
     var body: some View {
-        switch version {
-        case .loading, .failed:
-            Button {
-                fatalError("Should not be reachable")
-            } label: {
-                Label("安装", systemImage: "shippingbox.circle")
-            }
-            .disabled(true)
-        case .missing, .outdated:
-            VStack(alignment: .leading, spacing: 8) {
+        VStack {
+            switch version {
+            case .loading, .failed:
                 Button {
-                    Task { @MainActor in
-                        loading = true
-                        showLogs = true
-                        installationProgress.reset()
-                        installationProgress.isInstalling = true
-                        do {
-                            try await installNapcat(proxy: proxy, progress: installationProgress)
-                        } catch {
-                            failed = true
-                            self.error = error
-                        }
-                        installationProgress.isInstalling = false
-                        loading = false
-                        refreshHandler()
-                    }
+                    fatalError("Should not be reachable")
                 } label: {
-                    switch version {
-                    case .missing:
-                        Label("安装", systemImage: "shippingbox.circle")
-                    case .outdated:
-                        Label("更新", systemImage: "arrow.up.circle")
-                    default:
-                        fatalError("Should not be reachable")
+                    Label("安装", systemImage: "shippingbox.circle")
+                }
+                .disabled(true)
+            case .missing, .outdated:
+                if !loading {
+                    Button {
+                        Task { @MainActor in
+                            loading = true
+                            showLogs = true
+                            installationProgress.reset()
+                            installationProgress.isInstalling = true
+                            do {
+                                try await installNapcat(proxy: proxy, progress: installationProgress)
+                                showSuccessAlert = true
+                            } catch {
+                                failed = true
+                                self.error = error
+                            }
+                            installationProgress.isInstalling = false
+                            loading = false
+                        }
+                    } label: {
+                        switch version {
+                        case .missing:
+                            Label("安装", systemImage: "shippingbox.circle")
+                        case .outdated:
+                            Label("更新", systemImage: "arrow.up.circle")
+                        default:
+                            fatalError("Should not be reachable")
+                        }
                     }
                 }
-                .alert("发生错误", isPresented: $failed, presenting: error) { _ in
-                    Button("好") { failed = false }
-                } message: { e in
-                    Text(e.localizedDescription)
+            case .latest:
+                Button {
+                    do {
+                        try removeNapcat()
+                    } catch {
+                        failed = true
+                        self.error = error
+                    }
+                    refreshHandler()
+                } label: {
+                    Label("卸载", systemImage: "trash.circle")
                 }
-                if showLogs {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            ProgressView(value: installationProgress.progress) {
-                                Text("进度: \(installationProgress.progress.formatted(.percent))")
-                            }
-                            .progressViewStyle(.linear)
-                            Button("清除") {
-                                showLogs = false
-                                installationProgress.reset()
-                            }
-                            .disabled(installationProgress.isInstalling)
+                .disabled(status.patched)
+                .help("请先还原再卸载")
+            }
+            if showLogs {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        ProgressView(value: installationProgress.progress) {
+                            Text("进度: \(installationProgress.progress.formatted(.percent))")
                         }
-                        ScrollView {
-                            VStack(alignment: .leading, spacing: 4) {
-                                ForEach(installationProgress.logs) { log in
-                                    HStack(alignment: .top, spacing: 8) {
-                                        Text(log.timestamp, style: .time)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                            .frame(width: 60, alignment: .leading)
-                                        Text(log.message)
-                                            .font(.system(.caption, design: .monospaced))
-                                            .textSelection(.enabled)
-                                        Spacer()
-                                    }
+                        .progressViewStyle(.linear)
+                        Button("清除") {
+                            showLogs = false
+                            installationProgress.reset()
+                        }
+                        .disabled(installationProgress.isInstalling)
+                    }
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(installationProgress.logs) { log in
+                                HStack(alignment: .top, spacing: 8) {
+                                    Text(log.timestamp, style: .time)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .frame(width: 60, alignment: .leading)
+                                    Text(log.message)
+                                        .font(.system(.caption, design: .monospaced))
+                                        .textSelection(.enabled)
+                                    Spacer()
                                 }
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        .font(.system(.callout, design: .monospaced))
-                        .padding(.horizontal)
-                        .padding(.vertical, 5)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(.selection)
-                        .cornerRadius(5)
                     }
+                    .font(.system(.callout, design: .monospaced))
+                    .padding(.horizontal)
+                    .padding(.vertical, 5)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.selection)
+                    .cornerRadius(5)
                 }
-            }
-        case .latest:
-            Button {
-                do {
-                    try removeNapcat()
-                } catch {
-                    failed = true
-                    self.error = error
-                }
-                refreshHandler()
-            } label: {
-                Label("卸载", systemImage: "trash.circle")
-            }
-            .alert("发生错误", isPresented: $failed, presenting: error) { _ in
-                Button("好") { failed = false }
-            } message: { e in
-                Text(e.localizedDescription)
-            }
-            .disabled(status.patched)
-            .help("请先还原再卸载")
-        }
-    }
-}
-
-private struct InstallationProgressView: View {
-    let progress: InstallationProgress
-    var body: some View {
-        VStack(spacing: 20) {
-            Text("安装进度")
-                .font(.headline)
-            ProgressView(value: progress.progress) {
-                Text("进度: \(progress.progress.formatted(.percent))")
-            }
-            .progressViewStyle(.linear)
-            .frame(width: 400)
-            ScrollView {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(progress.logs) { log in
-                        HStack(alignment: .top, spacing: 8) {
-                            Text(log.timestamp, style: .time)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .frame(width: 60, alignment: .leading)
-                            Text(log.message)
-                                .font(.system(.caption, design: .monospaced))
-                                .textSelection(.enabled)
-                            Spacer()
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .font(.system(.callout, design: .monospaced))
-            .padding(.horizontal)
-            .padding(.vertical, 5)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.selection)
-            .cornerRadius(5)
-            HStack {
-                Spacer()
-                Button("关闭") {
-                    if !progress.isInstalling {
-                        progress.reset()
-                    }
-                }
-                .disabled(progress.isInstalling)
             }
         }
-        .padding()
-        .frame(width: 500)
+        .alert("发生错误", isPresented: $failed, presenting: error) { _ in
+            Button("好") { failed = false }
+        } message: { e in
+            Text(e.localizedDescription)
+        }
+        .alert("安装结果", isPresented: $showSuccessAlert) {
+            Button("好") { }
+        } message: {
+            switch version {
+            case .missing:
+                Text("NapCat 安装成功")
+            case .outdated:
+                Text("NapCat 已更新至最新版本")
+            default:
+                Text("操作完成")
+            }
+        }
     }
 }
 

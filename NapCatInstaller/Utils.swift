@@ -1,7 +1,7 @@
 import AppKit
-import Foundation
-import SwiftUI
+import Combine
 import ZIPFoundation
+import CryptoKit
 
 struct LogEntry: Identifiable {
     let id = UUID()
@@ -85,11 +85,10 @@ class DownloadDelegate: NSObject, URLSessionDownloadDelegate, URLSessionDelegate
 }
 
 let appURL = URL(fileURLWithPath: "/Applications/QQ.app/Contents/Resources/app")
-let containerURL = URL(fileURLWithPath: "/Users/\(NSUserName())/Library/Containers/com.tencent.qq/Data")
+let homeDir = NSHomeDirectory()
+let containerURL = URL(fileURLWithPath: "\(homeDir)/Library/Containers/com.tencent.qq/Data")
 let docURL = containerURL.appendingPathComponent("Documents", isDirectory: true)
 let datURL = containerURL.appendingPathComponent("Library/Application Support/QQ/NapCat", isDirectory: true)
-private let downloadCacheURL = containerURL.appendingPathComponent(".download", isDirectory: true)
-
 private func getJSONObject(url: URL) throws -> [NSString: Any]? {
     guard FileManager.default.fileExists(atPath: url.path) else { return nil }
     let data = try Data(contentsOf: url)
@@ -137,11 +136,34 @@ func getLocalNapcat() throws -> String? {
 }
 
 func getRemoteNapcat() async throws -> String? {
+    try await fetchReleaseInfo().version
+}
+
+struct ReleaseInfo {
+    let version: String?
+    let digest: String?
+}
+
+func fetchReleaseInfo() async throws -> ReleaseInfo {
     let (data, _) = try await URLSession.shared.data(from: URL(string: "https://api.github.com/repos/NapNeko/NapCatQQ/releases/latest")!)
     let obj = try JSONSerialization.jsonObject(with: data)
-    guard let dict = obj as? [NSString: Any] else { return nil }
-    guard let tagName = dict["tag_name"] as? String else { return nil }
-    return tagName.replacingOccurrences(of: "v", with: "")
+    guard let dict = obj as? [String: Any] else { return ReleaseInfo(version: nil, digest: nil) }
+    let version = (dict["tag_name"] as? String)?.replacingOccurrences(of: "v", with: "")
+    var digest: String?
+    if let assets = dict["assets"] as? [[String: Any]] {
+        for asset in assets {
+            guard let name = asset["name"] as? String, name == "NapCat.Shell.zip" else { continue }
+            digest = asset["digest"] as? String
+            break
+        }
+    }
+    return ReleaseInfo(version: version, digest: digest)
+}
+
+func sha256Digest(of url: URL) throws -> String {
+    let data = try Data(contentsOf: url)
+    let hash = SHA256.hash(data: data)
+    return hash.compactMap { String(format: "%02x", $0) }.joined()
 }
 
 func removeNapcat() throws {
@@ -330,6 +352,13 @@ func installNapcat(proxy: GitHubProxy? = nil, progress: InstallationProgress? = 
     progress?.addLog("创建目录: \(napcatURL.path)")
     try fileManager.createDirectory(at: napcatURL, withIntermediateDirectories: true)
     progress?.addLog("目录创建完成")
+    progress?.addLog("正在连接 GitHub API...")
+    let releaseInfo = try await fetchReleaseInfo()
+    if let ver = releaseInfo.version {
+        progress?.addLog("GitHub API 连接成功 (NapCat v\(ver))")
+    } else {
+        progress?.addLog("GitHub API 连接成功 (版本信息不可用)")
+    }
     let asset = "https://github.com/NapNeko/NapCatQQ/releases/latest/download/NapCat.Shell.zip"
     let url: URL
     if let proxy {
@@ -369,6 +398,29 @@ func installNapcat(proxy: GitHubProxy? = nil, progress: InstallationProgress? = 
     }
     downloadProgress.updateProgress(0.8)
     downloadProgress.addLog("下载完成")
+    downloadProgress.updateProgress(0.82)
+    downloadProgress.addLog("SHA-256 校验中...")
+    do {
+        if let expectedDigest = releaseInfo.digest {
+            let actualDigest = try sha256Digest(of: downloadLocation)
+            let expectedHash = expectedDigest.replacingOccurrences(of: "sha256:", with: "")
+            if actualDigest == expectedHash {
+                downloadProgress.addLog("SHA-256 校验通过: \(expectedHash)")
+            } else {
+                downloadProgress.addLog("错误: SHA-256 校验失败，文件可能已被篡改")
+                downloadProgress.addLog("期望值: \(expectedHash)")
+                downloadProgress.addLog("实际值: \(actualDigest)")
+                try? fileManager.removeItem(at: downloadLocation)
+                throw NSError(domain: "InstallError", code: 4, userInfo: [NSLocalizedDescriptionKey: "SHA-256 digest mismatch: file may have been tampered with"])
+            }
+        } else {
+            downloadProgress.addLog("警告: 无法从 GitHub API 获取校验和，跳过完整性验证")
+        }
+    } catch let error as NSError where error.domain == "InstallError" && error.code == 4 {
+        throw error
+    } catch {
+        downloadProgress.addLog("SHA-256 校验过程出错: \(error.localizedDescription)")
+    }
     downloadProgress.updateProgress(0.85)
     downloadProgress.addLog("解压到: \(napcatURL.path)")
     do {
@@ -397,7 +449,7 @@ func installNapcat(proxy: GitHubProxy? = nil, progress: InstallationProgress? = 
             downloadProgress.addLog("错误: package.json 格式无效")
             throw NSError(domain: "InstallError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid JSON"])
         }
-        if let newVersion = try await getRemoteNapcat() {
+        if let newVersion = releaseInfo.version {
             jsonObject?["version"] = newVersion
             downloadProgress.addLog("已修改 version 为: \(newVersion)")
         } else {
