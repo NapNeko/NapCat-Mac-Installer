@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Language-Swift-orange?logo=swift" alt="Swift">
   <img src="https://img.shields.io/badge/Platform-macOS%2012%2B-blue?logo=apple" alt="macOS">
-  <img src="https://img.shields.io/badge/Arch-ARM64-lightgrey?logo=arm" alt="Universal">
+  <img src="https://img.shields.io/badge/Arch-aarch64-lightgrey?logo=arm" alt="aarch64">
   <img src="https://img.shields.io/badge/Dependency-ZIPFoundation-orange?logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMjEgMTYuNWExIDEgMCAwIDEtLjUuODdsLTggNC41YTEgMSAwIDAgMS0xIDBsLTgtNC41QTEgMSAwIDAgMSAzIDE2LjV2LTlhMSAxIDAgMCAxIC41LS44N2w4LTQuNWExIDEgMCAwIDEgMSAwbDggNC41QTEgMSAwIDAgMSAyMSA3LjVaIi8+PHBvbHlsaW5lIHBvaW50cz0iMyA3LjUgMTIgMTIgMjEgNy41Ii8+PGxpbmUgeDE9IjEyIiB5MT0iMTIiIHgyPSIxMiIgeTI9IjIxIi8+PHBvbHlsaW5lIHBvaW50cz0iMyA3LjUgMyAxNi41IDEyIDIxIiBvcGFjaXR5PSIwLjMiLz48L3N2Zz4=" alt="ZIPFoundation">
 </p>
 
@@ -119,6 +119,7 @@ QQ 是一个基于 Electron 的桌面应用，其本质是一个 Node.js 运行�
 - [x] **README 重写** - 添加徽章、技术原理（沙箱突破、注入流程、路径说明）
 - [x] **安全修复** - TLS 校验、密码管道传输、shell 注入消除、entitlements 补全、`NSAllowsArbitraryLoads` 移除、弃用 API 迁移
 - [x] **稳定性修复** - 自引用编译错误、nil 写入 JSON、后台线程、Task 线程安全
+- [ ] **清理 NapCat 数据** - '~/Library/Containers/com.tencent.qq/Data/Library/Application Support/QQ/NapCat'
 
 ## 相关链接
 
