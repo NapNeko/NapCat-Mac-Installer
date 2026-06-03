@@ -241,7 +241,7 @@ private struct NapcatInstallationButton: View {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
                             ProgressView(value: installationProgress.progress) {
-                                Text("进度: \(Int(installationProgress.progress * 100))%")
+                                Text("进度: \(installationProgress.progress.formatted(.percent))")
                             }
                             .progressViewStyle(.linear)
                             Button("清除") {
@@ -306,7 +306,7 @@ private struct InstallationProgressView: View {
             Text("安装进度")
                 .font(.headline)
             ProgressView(value: progress.progress) {
-                Text("进度: \(Int(progress.progress * 100))%")
+                Text("进度: \(progress.progress.formatted(.percent))")
             }
             .progressViewStyle(.linear)
             .frame(width: 400)
@@ -366,7 +366,7 @@ private struct NapcatPatchView: View {
     }
 
     @ViewBuilder
-    private func patchButton(title: String, action: @escaping () throws -> Void) -> some View {
+    private func patchButton(title: LocalizedStringKey, action: @escaping () throws -> Void) -> some View {
         VStack(alignment: .center) {
             Button(title) {
                 do {

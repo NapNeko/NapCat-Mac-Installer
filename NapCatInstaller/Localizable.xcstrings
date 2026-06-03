@@ -107,63 +107,22 @@
         }
       }
     },
-    "，然后点击刷新" : {
-      "extractionState" : "stale",
+    "🐧 启动 原版QQ" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "with the backup, and click reload."
+            "value" : "🐧 Launch Original QQ"
           }
         }
       }
-    },
-    "🐧 启动 原版QQ" : {
-
     },
     "🚀 启动 NapCat" : {
-
-    },
-    "gh-proxy" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "gh-proxy"
-          }
-        }
-      }
-    },
-    "ghproxy" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ghproxy"
-          }
-        }
-      }
-    },
-    "haod" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "haod"
-          }
-        }
-      }
-    },
-    "moeyy" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "moeyy"
+            "value" : "🚀 Launch NapCat"
           }
         }
       }
@@ -178,45 +137,12 @@
         }
       }
     },
-    "QQ应用目录" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "QQ app directory"
-          }
-        }
-      }
-    },
     "QQ版本" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "QQ Version"
-          }
-        }
-      }
-    },
-    "下的package.json文件" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "."
-          }
-        }
-      }
-    },
-    "不使用" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "None"
           }
         }
       }
@@ -231,19 +157,35 @@
         }
       }
     },
-    "修改的文件" : {
-      "extractionState" : "stale",
+    "关闭" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "modified version"
+            "value" : "Close"
           }
         }
       }
     },
-    "关闭" : {
-
+    "切换程序入口「 NapCat 」" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch Entry to「 NapCat 」"
+          }
+        }
+      }
+    },
+    "切换程序入口「 原版 QQ 」" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch Entry to「 Original QQ 」"
+          }
+        }
+      }
     },
     "刷新" : {
       "localizations" : {
@@ -265,17 +207,6 @@
         }
       }
     },
-    "参数可以加 -q <QQ号> 快速登录" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "quick login by adding -q <QQ number>"
-          }
-        }
-      }
-    },
     "发生错误" : {
       "localizations" : {
         "en" : {
@@ -286,34 +217,12 @@
         }
       }
     },
-    "命令行启动，注入 NapCat" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Launch NapCat from shell"
-          }
-        }
-      }
-    },
     "好" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "OK"
-          }
-        }
-      }
-    },
-    "如果要还原，请将备份的package.json文件放回" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "To restore the patch, please replace package.json under"
           }
         }
       }
@@ -329,7 +238,14 @@
       }
     },
     "安装进度" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installation Progress"
+          }
+        }
+      }
     },
     "打开WebUI…" : {
       "localizations" : {
@@ -342,7 +258,14 @@
       }
     },
     "提示：启动原版QQ建议切换程序入口，否则可能会出现问题！" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tip: It is recommended to switch the program entry before launching the original QQ, otherwise problems may occur!"
+          }
+        }
+      }
     },
     "更新" : {
       "localizations" : {
@@ -354,30 +277,22 @@
         }
       }
     },
-    "正常启动 QQ GUI，不注入 NapCat" : {
-      "extractionState" : "stale",
+    "注意：需要在“系统设置-隐私与安全性-App管理”中添加该程序！" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Launch original QQ GUI"
+            "value" : "Note: You need to add this app in System Settings > Privacy & Security > App Management!"
           }
         }
       }
     },
-    "注意：需要在“系统设置-隐私与安全性-App管理”中添加该程序！" : {
-
-    },
     "清除" : {
-
-    },
-    "然后使用此" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : ", and replace it with this"
+            "value" : "Clear"
           }
         }
       }
@@ -402,17 +317,6 @@
         }
       }
     },
-    "覆盖，最后点击刷新" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : ". Click reload."
-          }
-        }
-      }
-    },
     "请先还原再卸载" : {
       "localizations" : {
         "en" : {
@@ -423,19 +327,15 @@
         }
       }
     },
-    "请备份" : {
-      "extractionState" : "stale",
+    "进度: %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Please backup package.json under"
+            "value" : "Progress: %@"
           }
         }
       }
-    },
-    "进度: %lld%%" : {
-
     }
   },
   "version" : "1.0"
