@@ -7,6 +7,8 @@
   <img src="https://img.shields.io/badge/Dependency-ZIPFoundation-orange?logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMjEgMTYuNWExIDEgMCAwIDEtLjUuODdsLTggNC41YTEgMSAwIDAgMS0xIDBsLTgtNC41QTEgMSAwIDAgMSAzIDE2LjV2LTlhMSAxIDAgMCAxIC41LS44N2w4LTQuNWExIDEgMCAwIDEgMSAwbDggNC41QTEgMSAwIDAgMSAyMSA3LjVaIi8+PHBvbHlsaW5lIHBvaW50cz0iMyA3LjUgMTIgMTIgMjEgNy41Ii8+PGxpbmUgeDE9IjEyIiB5MT0iMTIiIHgyPSIxMiIgeTI9IjIxIi8+PHBvbHlsaW5lIHBvaW50cz0iMyA3LjUgMyAxNi41IDEyIDIxIiBvcGFjaXR5PSIwLjMiLz48L3N2Zz4=" alt="ZIPFoundation">
 </p>
 
+> 推荐通过 Mac App Store 安装 QQ。该版本不含 QQUpdate.app 热更新模块，可避免 NapCat 切换时因热更新包入口残留导致的启动问题。
+
 ## 功能特性
 
 - **一键安装/更新/卸载** - 快速安装、更新或移除 NapCat
