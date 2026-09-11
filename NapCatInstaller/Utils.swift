@@ -114,13 +114,14 @@ func getQQVersion() throws -> String? {
 enum NapcatVersion: Equatable {
     case loading
     case missing
+    case installed(String)
     case outdated(String, String)
     case latest(String)
     case failed(String)
 
     var installed: Bool {
         switch self {
-        case .outdated, .latest:
+        case .installed, .outdated, .latest:
             return true
         default:
             return false
@@ -145,11 +146,25 @@ struct ReleaseInfo {
     let digest: String?
 }
 
-func fetchReleaseInfo() async throws -> ReleaseInfo {
-    let (data, _) = try await URLSession.shared.data(from: URL(string: "https://api.github.com/repos/NapNeko/NapCatQQ/releases/latest")!)
+private let latestReleaseAPIURL = URL(string: "https://api.github.com/repos/NapNeko/NapCatQQ/releases/latest")!
+
+private func fetchReleaseInfo(from url: URL) async throws -> ReleaseInfo {
+    var request = URLRequest(url: url)
+    request.timeoutInterval = 10
+    let (data, response) = try await URLSession.shared.data(for: request)
+    guard let httpResponse = response as? HTTPURLResponse,
+        (200..<300).contains(httpResponse.statusCode)
+    else {
+        throw URLError(.badServerResponse)
+    }
     let obj = try JSONSerialization.jsonObject(with: data)
-    guard let dict = obj as? [String: Any] else { return ReleaseInfo(version: nil, digest: nil) }
-    let version = (dict["tag_name"] as? String)?.replacingOccurrences(of: "v", with: "")
+    guard let dict = obj as? [String: Any],
+        let tagName = dict["tag_name"] as? String,
+        !tagName.isEmpty
+    else {
+        throw URLError(.cannotParseResponse)
+    }
+    let version = tagName.hasPrefix("v") ? String(tagName.dropFirst()) : tagName
     var digest: String?
     if let assets = dict["assets"] as? [[String: Any]] {
         for asset in assets {
@@ -159,6 +174,25 @@ func fetchReleaseInfo() async throws -> ReleaseInfo {
         }
     }
     return ReleaseInfo(version: version, digest: digest)
+}
+
+func fetchReleaseInfo() async throws -> ReleaseInfo {
+    do {
+        return try await fetchReleaseInfo(from: latestReleaseAPIURL)
+    } catch {
+        var lastError: Error = error
+        for proxy in GitHubProxy.allProxies where !proxy.baseURL.isEmpty {
+            let proxyBaseURL = proxy.baseURL.replacingOccurrences(of: "/https://github.com", with: "")
+            let proxyURLString = "\(proxyBaseURL)/\(latestReleaseAPIURL.absoluteString)"
+            guard let proxyURL = URL(string: proxyURLString) else { continue }
+            do {
+                return try await fetchReleaseInfo(from: proxyURL)
+            } catch {
+                lastError = error
+            }
+        }
+        throw lastError
+    }
 }
 
 func sha256Digest(of url: URL) throws -> String {

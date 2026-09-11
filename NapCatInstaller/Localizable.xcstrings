@@ -27,6 +27,16 @@
         }
       }
     },
+    " %@，已安装" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " %@, installed"
+          }
+        }
+      }
+    },
     " %@，已是最新" : {
       "localizations" : {
         "en" : {

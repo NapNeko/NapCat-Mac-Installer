@@ -110,16 +110,22 @@ struct ContentView: View {
 
     private func updateNapcatVersion() async {
         do {
-            guard let local = try getLocalNapcat(),
-                let remote = try await getRemoteNapcat()
-            else {
+            guard let local = try getLocalNapcat() else {
                 napcatVersion = .missing
                 return
             }
-            if local.compare(remote, options: .numeric) == .orderedAscending {
-                napcatVersion = .outdated(local, remote)
-            } else {
-                napcatVersion = .latest(remote)
+            do {
+                guard let remote = try await getRemoteNapcat() else {
+                    napcatVersion = .installed(local)
+                    return
+                }
+                if local.compare(remote, options: .numeric) == .orderedAscending {
+                    napcatVersion = .outdated(local, remote)
+                } else {
+                    napcatVersion = .latest(remote)
+                }
+            } catch {
+                napcatVersion = .installed(local)
             }
         } catch {
             napcatVersion = .failed(error.localizedDescription)
@@ -176,6 +182,8 @@ private struct NapcatVersionView: View {
             Text(Image(systemName: "ellipsis.circle")) + Text(" 正在加载…")
         case .missing:
             Text(Image(systemName: "questionmark.circle")).foregroundColor(.yellow) + Text(" 未安装")
+        case .installed(let v):
+            Text(Image(systemName: "checkmark.circle")).foregroundColor(.green) + Text(" \(v)，已安装")
         case .outdated(let l, let r):
             Text(Image(systemName: "arrow.up.circle")).foregroundColor(.blue) + Text(" \(l)，可升级\(r)")
         case .latest(let v):
@@ -265,7 +273,7 @@ private struct NapcatInstallationButton: View {
                         }
                     }
                 }
-            case .latest:
+            case .installed, .latest:
                 Button {
                     do {
                         try removeNapcat()
