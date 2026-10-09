@@ -37,17 +37,18 @@ class InstallationProgress: ObservableObject {
 
 class DownloadDelegate: NSObject, URLSessionDownloadDelegate, URLSessionDelegate {
     let progress: InstallationProgress
+    let destinationURL: URL
     var completionHandler: ((URL?, Error?) -> Void)?
     private var lastReportedProgress: Double = 0.0
     
-    init(progress: InstallationProgress) {
+    init(progress: InstallationProgress, destinationURL: URL) {
         self.progress = progress
+        self.destinationURL = destinationURL
         super.init()
     }
     
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
         let fileManager = FileManager.default
-        let destinationURL = napcatURL.appendingPathComponent("download.zip")
         do {
             if fileManager.fileExists(atPath: destinationURL.path) {
                 try fileManager.removeItem(at: destinationURL)
@@ -369,20 +370,10 @@ func installNapcat(proxy: GitHubProxy? = nil, progress: InstallationProgress? = 
     let fileManager = FileManager.default
     progress?.updateProgress(0.0)
     progress?.addLog("开始安装 NapCat...")
-    if fileManager.fileExists(atPath: napcatURL.path) {
-        progress?.addLog("清空已存在的 NapCat 文件夹内容: \(napcatURL.path)")
-        do {
-            let contents = try fileManager.contentsOfDirectory(atPath: napcatURL.path)
-            for item in contents {
-                let itemURL = napcatURL.appendingPathComponent(item)
-                try fileManager.removeItem(at: itemURL)
-            }
-            progress?.addLog("清空完成")
-        } catch {
-            progress?.addLog("清空失败: \(error.localizedDescription)")
-            throw error
-        }
-    }
+    let stagingURL = fileManager.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+    let extractedURL = stagingURL.appendingPathComponent("NapCat", isDirectory: true)
+    try fileManager.createDirectory(at: stagingURL, withIntermediateDirectories: true)
+    defer { try? fileManager.removeItem(at: stagingURL) }
     progress?.updateProgress(0.05)
     progress?.addLog("创建目录: \(napcatURL.path)")
     try fileManager.createDirectory(at: napcatURL, withIntermediateDirectories: true)
@@ -407,11 +398,12 @@ func installNapcat(proxy: GitHubProxy? = nil, progress: InstallationProgress? = 
     progress?.updateProgress(0.2)
     progress?.addLog("开始下载: \(url.absoluteString)")
     let downloadProgress = progress ?? InstallationProgress()
-    let delegate = DownloadDelegate(progress: downloadProgress)
+    let delegate = DownloadDelegate(progress: downloadProgress, destinationURL: stagingURL.appendingPathComponent("download.zip"))
     let config = URLSessionConfiguration.default
     config.timeoutIntervalForRequest = 30.0
     config.timeoutIntervalForResource = 300.0
     let session = URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
+    defer { session.finishTasksAndInvalidate() }
     let downloadTask = session.downloadTask(with: url)
     let downloadLocation = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<URL, Error>) in
         delegate.completionHandler = { location, error in
@@ -455,11 +447,12 @@ func installNapcat(proxy: GitHubProxy? = nil, progress: InstallationProgress? = 
         throw error
     } catch {
         downloadProgress.addLog("SHA-256 校验过程出错: \(error.localizedDescription)")
+        throw error
     }
     downloadProgress.updateProgress(0.85)
-    downloadProgress.addLog("解压到: \(napcatURL.path)")
+    downloadProgress.addLog("解压到临时目录...")
     do {
-        try fileManager.unzipItem(at: downloadLocation, to: napcatURL)
+        try fileManager.unzipItem(at: downloadLocation, to: extractedURL)
     } catch {
         downloadProgress.addLog("解压失败: \(error.localizedDescription)")
         try? fileManager.removeItem(at: downloadLocation)
@@ -467,12 +460,12 @@ func installNapcat(proxy: GitHubProxy? = nil, progress: InstallationProgress? = 
     }
     downloadProgress.updateProgress(0.95)
     downloadProgress.addLog("解压完成")
-    guard fileManager.fileExists(atPath: napcatURL.appendingPathComponent("napcat.mjs").path) else {
+    guard fileManager.fileExists(atPath: extractedURL.appendingPathComponent("napcat.mjs").path) else {
         downloadProgress.addLog("错误: 解压目录中缺少 napcat.mjs，文件可能已损坏或被篡改")
         try? fileManager.removeItem(at: downloadLocation)
         throw NSError(domain: "InstallError", code: 3, userInfo: [NSLocalizedDescriptionKey: "napcat.mjs not found after extraction"])
     }
-    let packageJsonURL = napcatURL.appendingPathComponent("package.json")
+    let packageJsonURL = extractedURL.appendingPathComponent("package.json")
     do {
         guard fileManager.fileExists(atPath: packageJsonURL.path) else {
             downloadProgress.addLog("错误: package.json 不存在于解压目录中")
@@ -496,7 +489,22 @@ func installNapcat(proxy: GitHubProxy? = nil, progress: InstallationProgress? = 
         downloadProgress.addLog("修改 version 失败: \(error.localizedDescription)")
         throw error
     }
-    try? fileManager.removeItem(at: downloadLocation)
+    for item in try fileManager.contentsOfDirectory(at: extractedURL, includingPropertiesForKeys: nil) {
+        let destination = napcatURL.appendingPathComponent(item.lastPathComponent)
+        if ["config", "plugins"].contains(item.lastPathComponent), fileManager.fileExists(atPath: destination.path) {
+            for defaultItem in try fileManager.contentsOfDirectory(at: item, includingPropertiesForKeys: nil) {
+                let defaultDestination = destination.appendingPathComponent(defaultItem.lastPathComponent)
+                if !fileManager.fileExists(atPath: defaultDestination.path) {
+                    try fileManager.copyItem(at: defaultItem, to: defaultDestination)
+                }
+            }
+        } else {
+            if fileManager.fileExists(atPath: destination.path) {
+                try fileManager.removeItem(at: destination)
+            }
+            try fileManager.moveItem(at: item, to: destination)
+        }
+    }
     downloadProgress.updateProgress(1.0)
     downloadProgress.addLog("安装完成")
 }
@@ -531,11 +539,13 @@ private let loaderURL = docURL.appendingPathComponent("loadNapCat.js")
 
 private func createLoader() throws {
     let loaderContent = #"""
+    const path = require('node:path');
+    const { pathToFileURL } = require('node:url');
     const loadNapcat = process.argv.includes('--no-sandbox');
     const package = require('/Applications/QQ.app/Contents/Resources/app/package.json');
     if (loadNapcat) {
         (async () => {
-            await import('file://\#(docURL.path)/napcat/napcat.mjs');
+            await import(pathToFileURL(path.join(__dirname, 'napcat/napcat.mjs')).href);
         })();
     } else {
         require('\#(appURL.path)/app_launcher/index.js');

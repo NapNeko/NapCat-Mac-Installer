@@ -1,0 +1,38 @@
+name: Build macOS installer
+
+on:
+  push:
+    paths:
+      - 'NapCatInstaller/**'
+      - 'NapCatInstaller.xcodeproj/**'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build universal installer
+        run: >-
+          xcodebuild -project NapCatInstaller.xcodeproj
+          -scheme NapCatInstaller -configuration Release
+          -destination 'generic/platform=macOS'
+          -derivedDataPath build
+          ARCHS='arm64 x86_64' ONLY_ACTIVE_ARCH=NO
+          CODE_SIGNING_ALLOWED=NO build
+      - name: Package installer
+        run: |
+          APP=build/Build/Products/Release/NapCatInstaller.app
+          lipo -info "$APP/Contents/MacOS/NapCatInstaller"
+          codesign --force --deep --sign - --entitlements NapCatInstaller/NapCatInstaller.entitlements "$APP"
+          codesign --verify --deep --strict "$APP"
+          ditto -c -k --sequesterRsrc --keepParent "$APP" NapCatInstaller_arm64.amd64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NapCatInstaller
+          path: NapCatInstaller_arm64.amd64.zip
