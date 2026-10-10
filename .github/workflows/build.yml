@@ -6,6 +6,8 @@ on:
       - 'NapCatInstaller/**'
       - 'NapCatInstaller.xcodeproj/**'
       - '.github/workflows/build.yml'
+      - 'Package.swift'
+      - 'Tests/**'
   workflow_dispatch:
 
 permissions:
@@ -17,6 +19,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Test release routing and download failures
+        run: swift test
       - name: Build universal installer
         run: >-
           xcodebuild -project NapCatInstaller.xcodeproj

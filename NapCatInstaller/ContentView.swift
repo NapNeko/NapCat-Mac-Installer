@@ -1,7 +1,8 @@
 import SwiftUI
 
 struct ContentView: View {
-    @AppStorage("GitHubProxyIndex") private var proxyIndex: Int = -1
+    @AppStorage("GitHubProxyURL") private var proxyAddress = "auto"
+    @AppStorage("CustomGitHubProxyURL") private var customProxyAddress = ""
     @State private var qqVersion = QQVersion.loading
     @State private var patchStatus = PatchStatus.loading
     @State private var napcatVersion = NapcatVersion.loading
@@ -11,10 +12,10 @@ struct ContentView: View {
     @StateObject private var installationProgress = InstallationProgress()
     
     private var proxy: GitHubProxy? {
-        if proxyIndex < 0 || proxyIndex >= GitHubProxy.allProxies.count {
-            return nil
-        }
-        return GitHubProxy.allProxies[proxyIndex]
+        if proxyAddress == "auto" { return nil }
+        if proxyAddress == "custom" { return GitHubProxy(name: "自定义加速", baseURL: customProxyAddress) }
+        return GitHubProxy(name: proxyAddress.isEmpty ? "GitHub 原生 / 系统代理" : proxyAddress,
+                           baseURL: proxyAddress.isEmpty ? nil : proxyAddress)
     }
 
     private var showPatch: Bool {
@@ -50,14 +51,22 @@ struct ContentView: View {
                 NapcatInstallationButton(version: napcatVersion, status: patchStatus, proxy: proxy, showLogs: $showLogs, progress: installationProgress) {
                     buttonClicked.toggle()
                 }
-                Picker("代理", selection: $proxyIndex) {
-                    Text("自动检测").tag(-1)
-                    ForEach(Array(GitHubProxy.allProxies.enumerated()), id: \.offset) { index, proxyItem in
+                Picker("下载线路", selection: $proxyAddress) {
+                    Text("自动检测").tag("auto")
+                    ForEach(GitHubProxy.allProxies) { proxyItem in
                         Text(proxyItem.name)
-                            .tag(index)
+                            .tag(proxyItem.baseURL ?? "")
                     }
+                    Text("自定义加速地址").tag("custom")
                 }
                 .frame(maxWidth: 150)
+            }
+            if proxyAddress == "custom" {
+                TextField("HTTP(S) 加速前缀，例如 https://mirror.example", text: $customProxyAddress)
+                    .textFieldStyle(.roundedBorder)
+                Text("网络代理和私有 CA 使用 macOS 的系统代理与证书信任设置。")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
             if showLogs {
                 NapcatLogView(progress: installationProgress)
@@ -115,10 +124,7 @@ struct ContentView: View {
                 return
             }
             do {
-                guard let remote = try await getRemoteNapcat() else {
-                    napcatVersion = .installed(local)
-                    return
-                }
+                let remote = try await getRemoteNapcat(proxy: proxy)
                 if local.compare(remote, options: .numeric) == .orderedAscending {
                     napcatVersion = .outdated(local, remote)
                 } else {

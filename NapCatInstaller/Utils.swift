@@ -35,56 +35,6 @@ class InstallationProgress: ObservableObject {
     }
 }
 
-class DownloadDelegate: NSObject, URLSessionDownloadDelegate, URLSessionDelegate {
-    let progress: InstallationProgress
-    let destinationURL: URL
-    var completionHandler: ((URL?, Error?) -> Void)?
-    private var lastReportedProgress: Double = 0.0
-    
-    init(progress: InstallationProgress, destinationURL: URL) {
-        self.progress = progress
-        self.destinationURL = destinationURL
-        super.init()
-    }
-    
-    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
-        let fileManager = FileManager.default
-        do {
-            if fileManager.fileExists(atPath: destinationURL.path) {
-                try fileManager.removeItem(at: destinationURL)
-            }
-            try fileManager.copyItem(at: location, to: destinationURL)
-            progress.addLog("下载文件已保存至: \(destinationURL.lastPathComponent)")
-            completionHandler?(destinationURL, nil)
-        } catch {
-            progress.addLog("保存下载文件失败: \(error.localizedDescription)")
-            completionHandler?(nil, error)
-        }
-    }
-    
-    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
-        guard totalBytesExpectedToWrite > 0 else { return }
-        let downloadProgress = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
-        let overallProgress = 0.2 + (downloadProgress * 0.6)
-        progress.updateProgress(overallProgress)
-        if downloadProgress - lastReportedProgress >= 0.1 || downloadProgress >= 1.0 {
-            lastReportedProgress = downloadProgress
-            let mbWritten = Double(totalBytesWritten) / (1024 * 1024)
-            let mbTotal = Double(totalBytesExpectedToWrite) / (1024 * 1024)
-            progress.addLog(String(format: "下载进度: %.1f MB / %.1f MB (%.1f%%)",
-                                   mbWritten, mbTotal, downloadProgress * 100))
-        }
-    }
-    
-    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-        if let error = error {
-            progress.addLog("下载任务失败: \(error.localizedDescription)")
-            completionHandler?(nil, error)
-        }
-    }
-    
-}
-
 let appURL = URL(fileURLWithPath: "/Applications/QQ.app/Contents/Resources/app")
 let homeDir = NSHomeDirectory()
 let containerURL = URL(fileURLWithPath: "\(homeDir)/Library/Containers/com.tencent.qq/Data")
@@ -138,232 +88,13 @@ func getLocalNapcat() throws -> String? {
     return dict["version"] as? String
 }
 
-func getRemoteNapcat() async throws -> String? {
-    try await fetchReleaseInfo().version
-}
-
-struct ReleaseInfo {
-    let version: String?
-    let digest: String?
-}
-
-private let latestReleaseAPIURL = URL(string: "https://api.github.com/repos/NapNeko/NapCatQQ/releases/latest")!
-
-private func fetchReleaseInfo(from url: URL) async throws -> ReleaseInfo {
-    var request = URLRequest(url: url)
-    request.timeoutInterval = 10
-    let (data, response) = try await URLSession.shared.data(for: request)
-    guard let httpResponse = response as? HTTPURLResponse,
-        (200..<300).contains(httpResponse.statusCode)
-    else {
-        throw URLError(.badServerResponse)
-    }
-    let obj = try JSONSerialization.jsonObject(with: data)
-    guard let dict = obj as? [String: Any],
-        let tagName = dict["tag_name"] as? String,
-        !tagName.isEmpty
-    else {
-        throw URLError(.cannotParseResponse)
-    }
-    let version = tagName.hasPrefix("v") ? String(tagName.dropFirst()) : tagName
-    var digest: String?
-    if let assets = dict["assets"] as? [[String: Any]] {
-        for asset in assets {
-            guard let name = asset["name"] as? String, name == "NapCat.Shell.zip" else { continue }
-            digest = asset["digest"] as? String
-            break
-        }
-    }
-    return ReleaseInfo(version: version, digest: digest)
-}
-
-func fetchReleaseInfo() async throws -> ReleaseInfo {
-    do {
-        return try await fetchReleaseInfo(from: latestReleaseAPIURL)
-    } catch {
-        var lastError: Error = error
-        for proxy in GitHubProxy.allProxies where !proxy.baseURL.isEmpty {
-            let proxyBaseURL = proxy.baseURL.replacingOccurrences(of: "/https://github.com", with: "")
-            let proxyURLString = "\(proxyBaseURL)/\(latestReleaseAPIURL.absoluteString)"
-            guard let proxyURL = URL(string: proxyURLString) else { continue }
-            do {
-                return try await fetchReleaseInfo(from: proxyURL)
-            } catch {
-                lastError = error
-            }
-        }
-        throw lastError
-    }
-}
-
-func sha256Digest(of url: URL) throws -> String {
-    let data = try Data(contentsOf: url)
-    let hash = SHA256.hash(data: data)
-    return hash.compactMap { String(format: "%02x", $0) }.joined()
+func getRemoteNapcat(proxy: GitHubProxy? = nil) async throws -> String {
+    try await resolveRelease(proxy: proxy).release.version
 }
 
 func removeNapcat() throws {
     try? FileManager.default.removeItem(at: loaderURL)
     try? FileManager.default.removeItem(at: napcatURL)
-}
-
-struct GitHubProxy: Identifiable, Hashable {
-    let id = UUID()
-    let name: String
-    let baseURL: String
-    let urlFormat: URLFormat
-    
-    enum URLFormat {
-        case direct
-        case github
-        case raw
-        case custom
-    }
-    
-    init(name: String, baseURL: String, format: URLFormat = .github) {
-        self.name = name
-        self.baseURL = baseURL
-        self.urlFormat = format
-    }
-    
-    func url(for resource: String) -> URL {
-        let cleanResource = resource
-            .replacingOccurrences(of: "https://github.com/", with: "")
-            .replacingOccurrences(of: "https://raw.githubusercontent.com/", with: "")
-        switch urlFormat {
-        case .direct:
-            return URL(string: resource)!
-        case .github:
-            return URL(string: "\(baseURL)/\(cleanResource)")!
-        case .raw:
-            return URL(string: "\(baseURL)/\(cleanResource)")!
-        case .custom:
-            if baseURL.hasPrefix("ssh://") || baseURL.isEmpty {
-                return URL(string: resource)!
-            }
-            return URL(string: "\(baseURL)/\(cleanResource)")!
-        }
-    }
-    
-    static let allProxies: [GitHubProxy] = {
-        let githubProxies = [
-            ("@X.I.U/XIU2", "https://gh.h233.eu.org"),
-            ("热心网友", "https://rapidgit.jjda.de5.net"),
-            ("@mtr-static-official", "https://gh.ddlc.top"),
-            ("gh-proxy.com", "https://gh-proxy.org"),
-            ("gh-proxy.com (cdn)", "https://cdn.gh-proxy.org"),
-            ("gh-proxy.com (edgeone)", "https://edgeone.gh-proxy.org"),
-            ("@yionchilau", "https://ghproxy.it"),
-            ("blog.boki.moe", "https://github.boki.moe"),
-            ("gh-proxy.net", "https://gh-proxy.net"),
-            ("gh.jasonzeng.dev", "https://gh.jasonzeng.dev"),
-            ("gh.monlor.com", "https://gh.monlor.com"),
-            ("fastgit.cc", "https://fastgit.cc"),
-            ("github.tbedu.top", "https://github.tbedu.top"),
-            ("firewall.lxstd.org", "https://firewall.lxstd.org"),
-            ("github.ednovas.xyz", "https://github.ednovas.xyz"),
-            ("ghfile.geekertao.top", "https://ghfile.geekertao.top"),
-            ("ghp.keleyaa.com", "https://ghp.keleyaa.com"),
-            ("gh.chjina.com", "https://gh.chjina.com"),
-            ("ghpxy.hwinzniej.top", "https://ghpxy.hwinzniej.top"),
-            ("cdn.crashmc.com", "https://cdn.crashmc.com"),
-            ("git.yylx.win", "https://git.yylx.win"),
-            ("gitproxy.mrhjx.cn", "https://gitproxy.mrhjx.cn"),
-            ("ghproxy.cxkpro.top", "https://ghproxy.cxkpro.top"),
-            ("gh.xxooo.cf", "https://gh.xxooo.cf"),
-            ("github.limoruirui.com", "https://github.limoruirui.com"),
-            ("gh.idayer.com", "https://gh.idayer.com"),
-            ("gh.llkk.cc", "https://gh.llkk.cc"),
-            ("gh.nxnow.top", "https://gh.nxnow.top"),
-            ("gh.zwy.one", "https://gh.zwy.one"),
-            ("ghproxy.monkeyray.net", "https://ghproxy.monkeyray.net"),
-            ("gh.xx9527.cn", "https://gh.xx9527.cn"),
-            ("ghproxy.link", "https://ghfast.top"),
-            ("ucdn.me", "https://wget.la"),
-            ("gh-proxy.com (hk)", "https://hk.gh-proxy.org"),
-        ]
-        let customProxies = [
-            ("@Lufs's", "https://cors.isteed.cc", URLFormat.custom),
-            ("raw.ihtw.moe", "https://raw.ihtw.moe", URLFormat.custom),
-            ("github.com/xixu-me/Xget", "https://xget.xi-xu.me/gh", URLFormat.custom),
-            ("GitClone", "https://gitclone.com", URLFormat.custom),
-            ("Github Fast", "https://githubfast.com", URLFormat.custom),
-            ("JSDelivr CDN", "https://fastly.jsdelivr.net/gh", URLFormat.raw),
-        ]
-        var proxies: [GitHubProxy] = []
-        proxies.append(contentsOf: githubProxies.map { GitHubProxy(name: $0.0, baseURL: "\($0.1)/https://github.com", format: .github) })
-        proxies.append(contentsOf: customProxies.map { GitHubProxy(name: $0.0, baseURL: $0.1, format: $0.2) })
-        proxies.insert(GitHubProxy(name: "GitHub 原生", baseURL: "", format: .direct), at: 0)
-        return proxies
-    }()
-    
-    static func auto(progress: InstallationProgress? = nil) async throws -> GitHubProxy {
-        let check = "https://github.com/NapNeko/NapCatQQ/releases/latest/download/NapCat.Shell.zip"
-        progress?.addLog("开始测速所有代理...")
-        let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 3.0
-        config.timeoutIntervalForResource = 5.0
-        let totalProxies = allProxies.filter { !$0.baseURL.isEmpty }.count
-        var testedCount = 0
-        return await withThrowingTaskGroup(of: (GitHubProxy, TimeInterval).self) { group in
-            for proxy in allProxies where !proxy.baseURL.isEmpty {
-                group.addTask {
-                    let session = URLSession(configuration: config)
-                    let start = Date()
-                    var request = URLRequest(url: proxy.url(for: check))
-                    request.setValue("bytes=0-1", forHTTPHeaderField: "Range")
-                    let (data, response) = try await session.data(for: request)
-                    guard let httpResponse = response as? HTTPURLResponse,
-                        (200..<300).contains(httpResponse.statusCode),
-                        data.count >= 2,
-                        data[0] == 0x50, data[1] == 0x4B
-                    else {
-                        throw URLError(.badServerResponse)
-                    }
-                    
-                    let duration = Date().timeIntervalSince(start)
-                    return (proxy, duration)
-                }
-            }
-            var fastestProxy: GitHubProxy?
-            var fastestTime: TimeInterval = .infinity
-            var successCount = 0
-            var failureCount = 0
-            while let result = await group.nextResult() {
-                testedCount += 1
-                switch result {
-                case .success(let (proxy, time)):
-                    successCount += 1
-                    if time < fastestTime {
-                        fastestTime = time
-                        fastestProxy = proxy
-                        progress?.addLog(String(format: "发现更快代理: %@ (%.2f秒) [%d/%d]", proxy.name, time, testedCount, totalProxies))
-                    }
-                case .failure(_):
-                    failureCount += 1
-                    if testedCount % 5 == 0 {
-                        progress?.addLog("测速进度: \(testedCount)/\(totalProxies) (成功: \(successCount), 失败: \(failureCount))")
-                    }
-                }
-            }
-            progress?.addLog("测速完成: \(successCount) 个代理可用, \(failureCount) 个代理失败")
-            if let fastest = fastestProxy {
-                progress?.addLog(String(format: "最快代理: %@ (%.2f秒)", fastest.name, fastestTime))
-                return fastest
-            }
-            progress?.addLog("所有代理均不可用，使用 GitHub 原生")
-            return GitHubProxy(name: "GitHub 原生", baseURL: "", format: .direct)
-        }
-    }
-
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(name)
-        hasher.combine(baseURL)
-    }
-
-    static func == (lhs: GitHubProxy, rhs: GitHubProxy) -> Bool {
-        return lhs.name == rhs.name && lhs.baseURL == rhs.baseURL
-    }
 }
 
 func installNapcat(proxy: GitHubProxy? = nil, progress: InstallationProgress? = nil) async throws {
@@ -379,76 +110,24 @@ func installNapcat(proxy: GitHubProxy? = nil, progress: InstallationProgress? = 
     try fileManager.createDirectory(at: napcatURL, withIntermediateDirectories: true)
     progress?.addLog("目录创建完成")
     progress?.addLog("正在连接 GitHub API...")
-    let releaseInfo = try await fetchReleaseInfo()
-    if let ver = releaseInfo.version {
-        progress?.addLog("GitHub API 连接成功 (NapCat v\(ver))")
-    } else {
-        progress?.addLog("GitHub API 连接成功 (版本信息不可用)")
-    }
-    let asset = "https://github.com/NapNeko/NapCatQQ/releases/latest/download/NapCat.Shell.zip"
-    let url: URL
-    if let proxy {
-        progress?.addLog("使用代理: \(proxy.name)")
-        url = proxy.url(for: asset)
-    } else {
-        progress?.updateProgress(0.1)
-        let fastestProxy = try await GitHubProxy.auto(progress: progress)
-        url = fastestProxy.url(for: asset)
-    }
+    let resolved = try await resolveRelease(proxy: proxy)
+    let releaseInfo = resolved.release
+    progress?.addLog("使用下载线路: \(resolved.proxy.name)，NapCat v\(releaseInfo.version)")
+    let url = try resolved.proxy.url(for: releaseInfo.assetURL.absoluteString)
     progress?.updateProgress(0.2)
-    progress?.addLog("开始下载: \(url.absoluteString)")
     let downloadProgress = progress ?? InstallationProgress()
-    let delegate = DownloadDelegate(progress: downloadProgress, destinationURL: stagingURL.appendingPathComponent("download.zip"))
-    let config = URLSessionConfiguration.default
-    config.timeoutIntervalForRequest = 30.0
-    config.timeoutIntervalForResource = 300.0
-    let session = URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
-    defer { session.finishTasksAndInvalidate() }
-    let downloadTask = session.downloadTask(with: url)
-    let downloadLocation = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<URL, Error>) in
-        delegate.completionHandler = { location, error in
-            if let error = error {
-                downloadProgress.addLog("下载失败: \(error.localizedDescription)")
-                continuation.resume(throwing: error)
-            } else if let location = location {
-                continuation.resume(returning: location)
-            } else {
-                downloadProgress.addLog("下载失败: 未知错误")
-                continuation.resume(throwing: URLError(.unknown))
-            }
+    var lastReportedProgress = 0.0
+    let downloadLocation = try await downloadArtifact(from: url, to: stagingURL.appendingPathComponent("download.zip")) { fraction, written, total in
+        downloadProgress.updateProgress(0.2 + fraction * 0.6)
+        if fraction - lastReportedProgress >= 0.1 || fraction >= 1 {
+            lastReportedProgress = fraction
+            downloadProgress.addLog(String(format: "下载进度: %.1f MB / %.1f MB (%.1f%%)",
+                                           Double(written) / 1048576, Double(total) / 1048576, fraction * 100))
         }
-        downloadTask.resume()
     }
-    guard fileManager.fileExists(atPath: downloadLocation.path) else {
-        downloadProgress.addLog("下载失败: 临时文件不存在")
-        throw URLError(.fileDoesNotExist)
-    }
-    downloadProgress.updateProgress(0.8)
-    downloadProgress.addLog("下载完成")
     downloadProgress.updateProgress(0.82)
-    downloadProgress.addLog("SHA-256 校验中...")
-    do {
-        if let expectedDigest = releaseInfo.digest {
-            let actualDigest = try sha256Digest(of: downloadLocation)
-            let expectedHash = expectedDigest.replacingOccurrences(of: "sha256:", with: "")
-            if actualDigest == expectedHash {
-                downloadProgress.addLog("SHA-256 校验通过: \(expectedHash)")
-            } else {
-                downloadProgress.addLog("错误: SHA-256 校验失败，文件可能已被篡改")
-                downloadProgress.addLog("期望值: \(expectedHash)")
-                downloadProgress.addLog("实际值: \(actualDigest)")
-                try? fileManager.removeItem(at: downloadLocation)
-                throw NSError(domain: "InstallError", code: 4, userInfo: [NSLocalizedDescriptionKey: "SHA-256 digest mismatch: file may have been tampered with"])
-            }
-        } else {
-            downloadProgress.addLog("警告: 无法从 GitHub API 获取校验和，跳过完整性验证")
-        }
-    } catch let error as NSError where error.domain == "InstallError" && error.code == 4 {
-        throw error
-    } catch {
-        downloadProgress.addLog("SHA-256 校验过程出错: \(error.localizedDescription)")
-        throw error
-    }
+    try verifyArtifact(at: downloadLocation, expectedDigest: releaseInfo.digest)
+    downloadProgress.addLog("SHA-256 校验通过")
     downloadProgress.updateProgress(0.85)
     downloadProgress.addLog("解压到临时目录...")
     do {
@@ -477,12 +156,7 @@ func installNapcat(proxy: GitHubProxy? = nil, progress: InstallationProgress? = 
             downloadProgress.addLog("错误: package.json 格式无效")
             throw NSError(domain: "InstallError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid JSON"])
         }
-        if let newVersion = releaseInfo.version {
-            jsonObject?["version"] = newVersion
-            downloadProgress.addLog("已修改 version 为: \(newVersion)")
-        } else {
-            downloadProgress.addLog("未获取到远程 version，保留原有版本")
-        }
+        jsonObject?["version"] = releaseInfo.version
         let newJsonData = try JSONSerialization.data(withJSONObject: jsonObject!, options: .prettyPrinted)
         try newJsonData.write(to: packageJsonURL)
     } catch {

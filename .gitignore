@@ -41,6 +41,7 @@ Temporary Items
 ## User settings
 xcuserdata/
 Build/
+.build/
 
 ## Xcode 8 and earlier
 *.xcscmblueprint
