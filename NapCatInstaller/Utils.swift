@@ -209,32 +209,118 @@ func getAppLoader() throws -> String? {
     return dict["main"] as? String
 }
 
-private let loaderURL = docURL.appendingPathComponent("loadNapCat.js")
+let loaderURL = docURL.appendingPathComponent("loadNapCat.js")
 
-private func createLoader() throws {
-    let loaderContent = #"""
-    const path = require('node:path');
-    const { pathToFileURL } = require('node:url');
-    const loadNapcat = process.argv.includes('--no-sandbox');
-    const package = require('/Applications/QQ.app/Contents/Resources/app/package.json');
-    if (loadNapcat) {
-        (async () => {
-            await import(pathToFileURL(path.join(__dirname, 'napcat/napcat.mjs')).href);
-        })();
-    } else {
-        require('\#(appURL.path)/app_launcher/index.js');
-        setImmediate(() => {
-            if (global.launcher && global.launcher.installPathPkgJson) {
-                global.launcher.installPathPkgJson.main = ((version) => {
-                    if (version >= 29271) return "./application.asar/app_launcher/index.js";
-                    if (version >= 28060) return "./application/app_launcher/index.js";
-                    return "./app_launcher/index.js";
-                })(package.buildVersion);
-            }
-        });
+// 旧版加载器：原版分支固定加载基础包 QQ.app 的 app_launcher，QQ 热更新后（运行时换成 QQUpdate.app 的 Electron）
+// 会出现进程存在但没有任何窗口。仅用于识别，不再写入。
+let legacyLoaderContent = #"""
+const path = require('node:path');
+const { pathToFileURL } = require('node:url');
+const loadNapcat = process.argv.includes('--no-sandbox');
+const package = require('/Applications/QQ.app/Contents/Resources/app/package.json');
+if (loadNapcat) {
+    (async () => {
+        await import(pathToFileURL(path.join(__dirname, 'napcat/napcat.mjs')).href);
+    })();
+} else {
+    require('\#(appURL.path)/app_launcher/index.js');
+    setImmediate(() => {
+        if (global.launcher && global.launcher.installPathPkgJson) {
+            global.launcher.installPathPkgJson.main = ((version) => {
+                if (version >= 29271) return "./application.asar/app_launcher/index.js";
+                if (version >= 28060) return "./application/app_launcher/index.js";
+                return "./app_launcher/index.js";
+            })(package.buildVersion);
+        }
+    });
+}
+"""#
+
+let loaderContent = #"""
+const path = require('node:path');
+const { pathToFileURL } = require('node:url');
+const loadNapcat = process.argv.includes('--no-sandbox');
+const package = require('/Applications/QQ.app/Contents/Resources/app/package.json');
+if (loadNapcat) {
+    (async () => {
+        await import(pathToFileURL(path.join(__dirname, 'napcat/napcat.mjs')).href);
+    })();
+} else {
+    // 原版 QQ：热更新生效时运行时来自 versions/<curVersion>/QQUpdate.app，必须加载同一包内的启动器，
+    // 不能用基础包 QQ.app 里为旧 Electron 构建的 app_launcher。按 QQNT.framework 版本与当前运行时匹配选择。
+    const fs = require('node:fs');
+    const baseAppDir = '\#(appURL.path)';
+    const versionsDir = path.resolve(__dirname, '../Library/Application Support/QQ/versions');
+    const frameworkVersion = (appDir) => {
+        try {
+            const plist = fs.readFileSync(path.resolve(appDir, '../../Frameworks/QQNT.framework/Resources/Info.plist'), 'utf8');
+            const m = plist.match(/<key>CFBundleVersion<\/key>\s*<string>([^<]+)<\/string>/);
+            return m ? m[1] : null;
+        } catch {
+            return null;
+        }
+    };
+    const candidates = [];
+    const configPath = path.join(versionsDir, 'config.json');
+    if (fs.existsSync(configPath)) {
+        const { curVersion } = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        if (curVersion) candidates.push(path.join(versionsDir, curVersion, 'QQUpdate.app/Contents/Resources/app'));
     }
-    """#
+    candidates.push(baseAppDir);
+    const runtime = process.versions.electron;
+    const launcherAppDir = candidates.find((dir) => frameworkVersion(dir) === runtime);
+    if (!launcherAppDir) {
+        throw new Error(`[loadNapCat] 找不到与当前 Electron ${runtime} 匹配的 QQ 启动器：`
+            + candidates.map((dir) => `${dir} (Electron ${frameworkVersion(dir)})`).join('; '));
+    }
+    const launcherEntry = path.join(launcherAppDir, 'app_launcher/index.js');
+    if (!fs.existsSync(launcherEntry) || !fs.existsSync(path.join(launcherAppDir, 'major.node'))) {
+        throw new Error(`[loadNapCat] QQ 启动器入口不完整：${launcherEntry}`);
+    }
+    require(launcherEntry);
+    setImmediate(() => {
+        if (global.launcher && global.launcher.installPathPkgJson) {
+            global.launcher.installPathPkgJson.main = ((version) => {
+                if (version >= 29271) return "./application.asar/app_launcher/index.js";
+                if (version >= 28060) return "./application/app_launcher/index.js";
+                return "./app_launcher/index.js";
+            })(package.buildVersion);
+        }
+    });
+}
+"""#
+
+enum LoaderStatus: Equatable {
+    case missing
+    case current
+    case legacy
+    case custom
+}
+
+func getLoaderStatus() -> LoaderStatus {
+    guard let content = try? String(contentsOf: loaderURL, encoding: .utf8) else { return .missing }
+    switch content {
+    case loaderContent: return .current
+    case legacyLoaderContent: return .legacy
+    default: return .custom
+    }
+}
+
+/// 写入双开加载器。已是当前版本时不改动；内容为自定义时先备份到 loadNapCat.js.bak-<时间>，返回备份位置。
+@discardableResult
+func installLoader() throws -> URL? {
+    let status = getLoaderStatus()
+    guard status != .current else { return nil }
+    var backupURL: URL?
+    if status == .custom {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd-HHmmss"
+        let url = docURL.appendingPathComponent("loadNapCat.js.bak-\(formatter.string(from: Date()))")
+        try FileManager.default.copyItem(at: loaderURL, to: url)
+        backupURL = url
+    }
     try loaderContent.write(to: loaderURL, atomically: true, encoding: .utf8)
+    return backupURL
 }
 
 private func relativePath(from sourceDir: URL, to targetFile: URL) -> String {
@@ -268,6 +354,14 @@ private func hotUpdatePackageURLs() -> [URL] {
             .appendingPathComponent("QQUpdate.app/Contents/Resources/app/package.json")
         return fileManager.fileExists(atPath: url.path) ? url : nil
     }
+}
+
+/// 尚未指向 loadNapCat.js 的热更新包数量。QQ 热更新生成新的 QQUpdate.app 后，NapCat 模式需要重新同步入口。
+func pendingHotUpdatePackages() -> Int {
+    hotUpdatePackageURLs().filter { pkgURL in
+        guard let dict = try? getJSONObject(url: pkgURL), let main = dict["main"] as? String else { return false }
+        return main != relativePath(from: pkgURL.deletingLastPathComponent(), to: loaderURL)
+    }.count
 }
 
 @discardableResult
@@ -485,7 +579,11 @@ func setQQPackageBak() throws {
         }
         return
     }
-    try createLoader()
+    // 已是双开加载器则不改动；自定义加载器保留不覆盖，需要时在启动管理中手动替换（会先备份）
+    let keptCustomLoader = getLoaderStatus() == .custom
+    if !keptCustomLoader {
+        try installLoader()
+    }
     guard var qq = try getJSONObject(url: packageURL) else { return }
     qq["main"] = napcatLoader
     let data = try JSONSerialization.data(withJSONObject: qq, options: [.prettyPrinted, .withoutEscapingSlashes])
@@ -530,6 +628,9 @@ func setQQPackageBak() throws {
                 }
             } catch {
                 info += "\n警告：QQ 热更新包入口同步失败（\(error.localizedDescription)）"
+            }
+            if keptCustomLoader {
+                info += "\n提示：检测到自定义的 loadNapCat.js，已保留未覆盖"
             }
             let alert = NSAlert()
             alert.messageText = "成功"
