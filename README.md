@@ -13,6 +13,20 @@ macOS 12+ 的 NapCat 安装和更新工具，支持 Intel / Apple Silicon。
 
 配置和插件位于 `~/Library/Containers/com.tencent.qq/Data/Documents/napcat`，更新时保留。
 
+## 同时运行 NapCat 与原版 QQ
+
+切换到 NapCat 入口后，启动管理面板会显示 NapCat 与原版 QQ 的实际运行状态，两者可以同时运行：
+
+- 「启动 NapCat」：NapCat 已运行时不重复启动，不会结束原版 QQ。
+- 「启动 原版QQ」：以新实例打开原版 QQ 图形界面，供另一个账号登录；已有原版实例时直接激活它。
+- 「停止」：只结束所选的那个实例，先请求正常退出。
+
+QQ 热更新后加载器会自动匹配当前运行时的启动器。
+
+### Running NapCat and the native QQ client together
+
+After switching the entry point to NapCat, the launch panel shows the live state of NapCat and of the native QQ client and can start either one without stopping the other. Use a different QQ account in the native client. The loader picks the QQ launcher that matches the Electron runtime in use, including after QQ hot updates. See [docs/dual-instance.md](docs/dual-instance.md) for the root cause, behaviour and limitations.
+
 ## 构建
 
 使用 Xcode 打开 `NapCatInstaller.xcodeproj`，选择 `NapCatInstaller` scheme 构建。CI 提供 universal 安装包。
