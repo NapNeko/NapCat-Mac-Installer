@@ -136,13 +136,14 @@ update 7.0.2-53644, NapCat 4.18.41.
 | Loader executed in Node with the launcher `require` intercepted: live layout and fixtures for no hot update, hot update, second hot update, incomplete bundle, runtime mismatch | Pass |
 | Swift logic checks (22): launcher resolution fixtures, process classification against the live process table (read-only), argument parsing, identity checks, `stop()` refusing a non-QQ process | Pass |
 | UI checks (26): real `NapcatUsageView` hosted off-screen with a mock controller and fake PIDs, buttons driven with `performClick`, alerts inspected, screenshots of every state | Pass |
+| `xcodebuild` Release build of the Xcode project on GitHub Actions (`macos-15-arm64` image, Xcode 16.4 / 16F6, macOS 15.5 SDK), universal binary, ad-hoc signed | `BUILD SUCCEEDED`, 0 errors, no compiler warnings (only Xcode's generic "no AppIntents.framework dependency" notice); asset and string catalogs compiled; `codesign --verify --deep --strict` passes |
 
 The UI checks found and fixed two issues before submission: PIDs were shown
 with digit grouping (`58,901`) in labels created from string literals, and long
 error messages were truncated to one line.
 
-The full `xcodebuild` of the Xcode project has only been prepared for CI, not
-run yet (no Xcode on the test machine).
+The new launch panel's start and stop buttons have only been exercised against
+the mock controller, not against real QQ processes.
 
 ## Known limitations
 
@@ -159,5 +160,3 @@ run yet (no Xcode on the test machine).
   verified.
 - Stopping a NapCat instance that was started from Terminal has not been
   exercised against a real process.
-- String catalogs and the asset catalog were not compiled in the local test
-  build (they require Xcode); the CI build compiles them.
