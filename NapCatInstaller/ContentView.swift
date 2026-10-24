@@ -403,32 +403,68 @@ private struct NapcatPatchView: View {
     }
 }
 
-private struct NapcatUsageView: View {
-    @State private var launchError: String? = nil
+struct NapcatUsageView: View {
+    var controller = QQController.live
+    @State private var instances: [QQInstance] = []
+    @State private var loaderStatus = LoaderStatus.current
+    @State private var launcher: Result<OriginalLauncher, LauncherCheckError>?
+    @State private var pendingHotUpdates = 0
+    @State private var message: String? = nil
+    @State private var messageIsError = false
     @State private var showNapcatConfirm = false
-    @State private var showOriginalConfirm = false
+    @State private var showLoaderConfirm = false
+    @State private var stopCandidate: QQInstance?
+    @State private var originalLaunchDeadline: Date?
+    @State private var stopping = false
+    private let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
+
+    private var napcatInstances: [QQInstance] { instances.filter { $0.role == .napcat } }
+    private var originalInstances: [QQInstance] { instances.filter { $0.role == .original } }
+    private var originalLaunching: Bool {
+        originalInstances.isEmpty && (originalLaunchDeadline.map { $0 > Date() } ?? false)
+    }
 
     var body: some View {
         VStack(alignment: .center, spacing: 12) {
-            HStack(spacing: 20) {
-                Button("🐱 启动 NapCat") {
-                    prepareLaunch(mode: .napcat)
+            HStack(alignment: .top, spacing: 30) {
+                VStack(spacing: 6) {
+                    instanceStatus(title: "NapCat", instances: napcatInstances)
+                    HStack {
+                        Button("🐱 启动 NapCat") {
+                            prepareNapcatLaunch()
+                        }
+                        .disabled(!napcatInstances.isEmpty)
+                        stopButtons(for: napcatInstances)
+                    }
                 }
-                Button("🐧 启动 原版QQ") {
-                    prepareLaunch(mode: .original)
+                VStack(spacing: 6) {
+                    instanceStatus(title: "原版 QQ", instances: originalInstances)
+                    HStack {
+                        Button(originalInstances.isEmpty ? "🐧 启动 原版QQ" : "🐧 显示 原版QQ") {
+                            startOriginal()
+                        }
+                        .disabled(originalLaunching)
+                        stopButtons(for: originalInstances)
+                    }
                 }
             }
-            if let error = launchError {
-                Text(error)
+            launcherStatus
+            if let message {
+                Text(message)
                     .font(.caption)
-                    .foregroundColor(.red)
+                    .foregroundColor(messageIsError ? .red : .secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .onAppear(perform: refresh)
+        .onReceive(timer) { _ in refresh() }
         .alert("确认启动", isPresented: $showNapcatConfirm) {
             Button("使用终端打开") {
-                launchInTerminal()
+                startNapcat()
             }
             Button("复制") {
+                guard syncHotUpdateEntries() else { return }
                 copyCommand()
             }
             Button("取消", role: .cancel) {
@@ -436,112 +472,235 @@ private struct NapcatUsageView: View {
         } message: {
             Text(napcatCommand)
         }
-        .alert("启动原版QQ", isPresented: $showOriginalConfirm) {
-            Button("启动") {
-                restoreAndLaunchOriginal()
+        .alert("更新加载器", isPresented: $showLoaderConfirm) {
+            Button("备份并替换") {
+                updateLoader()
             }
             Button("取消", role: .cancel) {
             }
         } message: {
-            Text("将恢复 QQ 原版程序入口并启动，需要输入开机密码。")
+            Text("当前 loadNapCat.js 为自定义内容，将先备份到同目录的 loadNapCat.js.bak-<时间>，再替换为支持双开的加载器。已运行的 QQ 不受影响。")
+        }
+        .alert("确认停止", isPresented: Binding(get: { stopCandidate != nil }, set: { if !$0 { stopCandidate = nil } }),
+               presenting: stopCandidate) { instance in
+            Button("停止", role: .destructive) {
+                confirmStop(instance)
+            }
+            Button("取消", role: .cancel) {
+            }
+        } message: { instance in
+            Text(instance.role == .napcat
+                 ? "将正常退出 NapCat（PID \(String(instance.pid))），机器人会离线。原版 QQ 不受影响。"
+                 : "将正常退出原版 QQ（PID \(String(instance.pid))）。NapCat 不受影响。")
         }
     }
 
-    private enum LaunchMode {
-        case napcat
-        case original
+    @ViewBuilder
+    private func instanceStatus(title: String, instances: [QQInstance]) -> some View {
+        if instances.isEmpty {
+            Text(Image(systemName: "circle")).foregroundColor(.secondary) + Text(" \(title)：未运行")
+        } else {
+            let detail = instances.map { instance -> String in
+                guard instance.role == .original else { return "PID \(instance.pid)" }
+                switch instance.windowState {
+                case .visible: return "PID \(instance.pid)"
+                case .hidden: return "PID \(instance.pid)，窗口不在当前桌面"
+                case .none: return "PID \(instance.pid)，无窗口"
+                }
+            }.joined(separator: "；")
+            Text(Image(systemName: "checkmark.circle.fill")).foregroundColor(.green) + Text(" \(title)：运行中（\(detail)）")
+        }
+    }
+
+    @ViewBuilder
+    private func stopButtons(for instances: [QQInstance]) -> some View {
+        ForEach(instances) { instance in
+            // PID 以字符串插入，避免 LocalizedStringKey 按地区格式化成 58,901
+            Button(instances.count > 1 ? "停止 \(String(instance.pid))" : "停止") {
+                stopCandidate = instance
+            }
+            .disabled(stopping)
+        }
+    }
+
+    @ViewBuilder
+    private var launcherStatus: some View {
+        VStack(spacing: 4) {
+            switch loaderStatus {
+            case .current:
+                EmptyView()
+            case .legacy, .missing:
+                HStack {
+                    Text(Image(systemName: "exclamationmark.triangle")).foregroundColor(.yellow)
+                        + Text(loaderStatus == .legacy ? " 加载器为旧版，原版 QQ 会无窗口" : " 未找到 loadNapCat.js")
+                    Button("更新加载器") { updateLoader() }
+                }
+            case .custom:
+                HStack {
+                    Text(Image(systemName: "questionmark.circle")).foregroundColor(.yellow) + Text(" 加载器为自定义内容")
+                    Button("替换为双开加载器") { showLoaderConfirm = true }
+                }
+            }
+            switch launcher {
+            case .success(let l):
+                Text("原版启动器：\(l.hotUpdateVersion.map { "热更新 \($0)" } ?? "QQ.app 自带")，Electron \(l.electronVersion)")
+                    .foregroundColor(.secondary)
+            case .failure(let e):
+                (Text(Image(systemName: "xmark.circle")).foregroundColor(.red) + Text(" \(e.localizedDescription)"))
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            case nil:
+                EmptyView()
+            }
+            if pendingHotUpdates > 0 {
+                Text("检测到 \(pendingHotUpdates) 个 QQ 热更新包尚未指向 NapCat，启动 NapCat 时会自动同步")
+                    .foregroundColor(.secondary)
+            }
+        }
+        .font(.caption)
     }
 
     private var napcatCommand: String {
-        "'/Applications/QQ.app/Contents/MacOS/QQ' --no-sandbox"
+        "'\(qqExecutablePath)' \(napcatFlag)"
     }
 
-    private func getQQAppURL() -> URL? {
-        let defaultPath = "/Applications/QQ.app"
-        let url = URL(fileURLWithPath: defaultPath)
-        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
-        return url
+    private func show(_ text: String, error: Bool = false) {
+        message = text
+        messageIsError = error
     }
 
-    private func terminateQQ() {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
-        process.arguments = ["-9", "QQ", "QQEXDOC"]
+    private func refresh() {
+        instances = controller.instances()
+        loaderStatus = controller.loaderStatus()
+        launcher = controller.launcher()
+        pendingHotUpdates = controller.pendingHotUpdates()
+    }
+
+    private func checkExecutable() -> Bool {
+        guard controller.qqInstalled() else {
+            show("未找到 QQ.app 或 QQ 可执行文件不可执行，请确认已安装 QQ", error: true)
+            return false
+        }
+        return true
+    }
+
+    private func prepareNapcatLaunch() {
+        refresh()
+        guard checkExecutable() else { return }
+        if let running = napcatInstances.first {
+            show("NapCat 已在运行（PID \(running.pid)），不重复启动")
+            return
+        }
+        message = nil
+        showNapcatConfirm = true
+    }
+
+    /// QQ 热更新生成新的 QQUpdate.app 后，其入口需重新指向 loadNapCat.js，否则 NapCat 不会加载
+    private func syncHotUpdateEntries() -> Bool {
         do {
-            try process.run()
-            process.waitUntilExit()
-            Thread.sleep(forTimeInterval: 1.0)
+            let patched = try controller.syncHotUpdates()
+            if patched > 0 {
+                show("已同步 \(patched) 个 QQ 热更新包入口")
+            }
+            return true
         } catch {
-        }
-    }
-
-    private func prepareLaunch(mode: LaunchMode) {
-        guard let qqAppURL = getQQAppURL() else {
-            launchError = "未找到 QQ.app，请确认已安装 QQ"
-            return
-        }
-        let executableURL = qqAppURL.appendingPathComponent("Contents/MacOS/QQ")
-        guard FileManager.default.isExecutableFile(atPath: executableURL.path) else {
-            launchError = "QQ 可执行文件不存在或不可执行"
-            return
-        }
-        launchError = nil
-        switch mode {
-        case .napcat:
-            showNapcatConfirm = true
-        case .original:
-            showOriginalConfirm = true
+            show("同步 QQ 热更新包入口失败：\(error.localizedDescription)", error: true)
+            return false
         }
     }
 
     private func copyCommand() {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(napcatCommand, forType: .string)
+        controller.copyToPasteboard(napcatCommand)
     }
 
-    private func launchInTerminal() {
-        terminateQQ()
-        guard let qqAppURL = getQQAppURL() else { return }
-        let executableURL = qqAppURL.appendingPathComponent("Contents/MacOS/QQ")
-        let path = executableURL.path
-        let escapedPath = path.replacingOccurrences(of: "'", with: "'\\''")
-        let flag = "--no-sandbox"
-        let script = """
-        tell application "Terminal"
-            activate
-            if (count of windows) is 0 then
-                do script "'\(escapedPath)' \(flag)"
-            else
-                tell front window
-                    do script "'\(escapedPath)' \(flag)" in selected tab
-                end tell
-            end if
-        end tell
-        """
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-        process.arguments = ["-e", script]
+    private func startNapcat() {
+        refresh()
+        if let running = napcatInstances.first {
+            show("NapCat 已在运行（PID \(running.pid)），不重复启动")
+            return
+        }
+        guard syncHotUpdateEntries() else { return }
         do {
-            try process.run()
-            launchError = nil
+            try controller.startNapcat()
         } catch {
-            launchError = "启动失败: \(error.localizedDescription)"
+            show("启动失败: \(error.localizedDescription)", error: true)
         }
     }
 
-    private func restoreAndLaunchOriginal() {
-        terminateQQ()
-        let restored = getQQPackageBak()
-        guard restored else { return }
-        guard let qqAppURL = getQQAppURL() else { return }
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-        process.arguments = [qqAppURL.path]
+    private func startOriginal() {
+        refresh()
+        guard checkExecutable() else { return }
+        // 已有原版实例时激活它，而不是继续创建新实例
+        if let existing = originalInstances.first(where: { $0.windowState == .visible })
+            ?? originalInstances.first(where: { $0.windowState == .hidden })
+            ?? originalInstances.first
+        {
+            controller.activateInstance(existing)
+            guard existing.windowState == .none else {
+                show("已激活原版 QQ（PID \(existing.pid)）")
+                return
+            }
+            show("正在唤起原版 QQ（PID \(existing.pid)）的窗口…")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                refresh()
+                if let current = originalInstances.first(where: { $0.pid == existing.pid }),
+                    current.windowState == .none
+                {
+                    show("原版 QQ（PID \(existing.pid)）没有任何窗口，可能未正常启动。可点击「停止」结束该实例后重新启动。",
+                         error: true)
+                }
+            }
+            return
+        }
+        switch loaderStatus {
+        case .legacy:
+            show("当前 loadNapCat.js 为旧版，QQ 热更新后原版 QQ 会无窗口。请先点击「更新加载器」。", error: true)
+            return
+        case .missing:
+            show("未找到 loadNapCat.js，请先点击「更新加载器」。", error: true)
+            return
+        case .current, .custom:
+            break
+        }
+        if case .failure(let error) = launcher {
+            show("无法启动原版 QQ：\(error.localizedDescription)。请重新打开一次原版 QQ 让其完成更新，或重新安装 QQ。", error: true)
+            return
+        }
         do {
-            try process.run()
-            launchError = nil
+            try controller.startOriginal()
+            originalLaunchDeadline = Date().addingTimeInterval(20)
+            show("已启动新的原版 QQ 实例，请使用与 NapCat 不同的 QQ 账号登录")
         } catch {
-            launchError = "启动失败: \(error.localizedDescription)"
+            show("启动失败: \(error.localizedDescription)", error: true)
+        }
+    }
+
+    private func updateLoader() {
+        do {
+            let backup = try controller.updateLoader()
+            show(backup.map { "加载器已更新，原文件已备份到 \($0.lastPathComponent)" } ?? "加载器已更新")
+        } catch {
+            show("更新加载器失败：\(error.localizedDescription)", error: true)
+        }
+        refresh()
+    }
+
+    private func confirmStop(_ instance: QQInstance) {
+        stopping = true
+        DispatchQueue.global(qos: .userInitiated).async {
+            let result = controller.stopInstance(instance)
+            DispatchQueue.main.async {
+                stopping = false
+                refresh()
+                switch result {
+                case .stopped:
+                    show("已停止 PID \(instance.pid)")
+                case .identityChanged:
+                    show("PID \(instance.pid) 已不是原来的进程，未执行任何操作", error: true)
+                case .stillRunning:
+                    show("PID \(instance.pid) 未响应退出请求，仍在运行。为避免数据损坏未强制结束，请在该程序中手动退出。", error: true)
+                }
+            }
         }
     }
 }
